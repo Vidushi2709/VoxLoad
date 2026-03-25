@@ -56,6 +56,9 @@ _HIGH_THRESHOLD = 0.60
 PAUSE_INTERACTION_FLOOR = 0.35
 PAUSE_INTERACTION_CEIL  = 0.75
 
+# Weight coverage gate: prevent silent failures from too many agent failures
+MIN_WEIGHT_COVERAGE = 0.70  # 70% of total weight must be active
+
 
 def _apply_interaction(agent_scores: dict, contributions: dict, norm_w: dict) -> tuple:
     """
@@ -104,6 +107,11 @@ def _apply_interaction(agent_scores: dict, contributions: dict, norm_w: dict) ->
             contributions["syntactic_complexity"] - expert_bonus, 4
         ))
         interaction_delta = round(-expert_bonus, 4)
+    else:
+        # Neutral zone: moderate pauses and/or moderate complexity
+        # No interaction effect applies; contributions used as-is
+        # interaction_delta remains 0.0 (no adjustment)
+        pass
 
     return adj, interaction_delta
 
@@ -147,7 +155,19 @@ def aggregator(
     if not active_keys:
         raise ValueError("No valid agent scores provided.")
 
-    total_weight = sum(w[k] for k in active_keys)
+    # Coverage gate: ensure enough agent weight is active
+    total_weight = sum(w.values())  # Sum of ALL weights
+    active_weight = sum(w[k] for k in active_keys)
+    weight_coverage = active_weight / total_weight if total_weight > 0 else 0.0
+    
+    if weight_coverage < MIN_WEIGHT_COVERAGE:
+        missing_agents = [k for k in w if k not in agent_scores or agent_scores[k].get("unreliable", False)]
+        raise ValueError(
+            f"Only {weight_coverage:.0%} of total weight covered (need {MIN_WEIGHT_COVERAGE:.0%}). "
+            f"Missing/unreliable agents: {missing_agents}"
+        )
+
+    total_weight = active_weight  # Use active weight for normalization
     norm_w = {k: w[k] / total_weight for k in active_keys}
 
     contributions = {

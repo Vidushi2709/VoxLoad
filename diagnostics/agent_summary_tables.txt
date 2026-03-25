@@ -1,0 +1,144 @@
+
+====================================================================================================
+                                DETAILED AGENT METRICS PER RECORDING                                
+====================================================================================================
+
+
+----------------------------------------------------------------------------------------------------
+SPEECH RATE AGENT                                                                                   
+----------------------------------------------------------------------------------------------------
+Recording       WPM      Variance     Slow Score   Rush Score   Final Score 
+----------------------------------------------------------------------------------------------------
+q01_low         136.4    0.00         0.597        0.000        0.269       
+q02_low         86.4     149.49       0.954        0.000        0.560       
+q03_medium      96.3     8.00         0.884        0.000        0.405       
+q04_medium      86.1     69.84        0.957        0.000        0.492       
+q05_high        64.8     103.25       1.000        0.000        0.540       
+q06_high        23.6     56.25        1.000        0.000        0.499       
+q01_low         105.4    58.50        0.818        0.000        0.420       
+q02_low         156.8    320.25       0.452        0.165        0.516       
+q03_medium      118.9    0.00         0.722        0.000        0.325       
+q04_medium      124.1    110.25       0.685        0.000        0.405       
+q05_high        123.2    81.69        0.691        0.000        0.383       
+q06_high        132.1    26.00        0.628        0.001        0.305       
+q06_high        132.5    381.89       0.625        0.018        0.619       
+q24_high        133.2    661.61       0.620        0.024        0.634       
+q10_low         151.5    260.84       0.489        0.108        0.470       
+q11_low         169.4    693.92       0.361        0.303        0.573       
+q16_medium      132.3    484.94       0.627        0.018        0.635       
+q17_medium      120.8    604.41       0.709        0.000        0.669       
+----------------------------------------------------------------------------------------------------
+Notes: Measures words-per-minute, variance, slowness, and speech rushing.
+       Higher WPM variance and slow/rush scores indicate cognitive load.
+
+
+----------------------------------------------------------------------------------------------------
+PAUSE PATTERNS AGENT                                                                                
+----------------------------------------------------------------------------------------------------
+Recording       Pauses   Mean(ms)     Rate/min     Long%      Final Score 
+----------------------------------------------------------------------------------------------------
+q01_low         0        0.0          0.00         0.0%       0.000       
+q02_low         26       1050.0       23.41        42.3%      0.795       
+q03_medium      9        884.4        17.68        44.4%      0.690       
+q04_medium      12       895.8        16.93        33.3%      0.662       
+q05_high        19       1088.4       24.62        63.2%      0.855       
+q06_high        17       2429.4       18.23        88.2%      0.842       
+q01_low         10       759.0        17.00        30.0%      0.623       
+q02_low         15       648.0        19.43        13.3%      0.590       
+q03_medium      9        631.1        23.26        11.1%      0.626       
+q04_medium      8        461.3        19.09        0.0%       0.492       
+q05_high        24       488.3        18.60        8.3%       0.524       
+q06_high        12       367.5        21.43        0.0%       0.494       
+q06_high        52       658.1        24.44        11.5%      0.648       
+q24_high        46       680.4        24.12        19.6%      0.670       
+q10_low         39       612.1        28.41        10.3%      0.679       
+q11_low         33       501.5        23.01        12.1%      0.592       
+q16_medium      31       588.7        21.81        19.4%      0.618       
+q17_medium      30       799.3        25.33        33.3%      0.742       
+----------------------------------------------------------------------------------------------------
+Notes: Detects hesitation: count, mean duration, rate, and long pauses (>1200ms).
+       Higher pause frequency/duration = higher cognitive load.
+
+
+----------------------------------------------------------------------------------------------------
+FILLER WORDS AGENT                                                                                  
+----------------------------------------------------------------------------------------------------
+Recording       Total Words   Fillers  Rate       Weighted   Final Score 
+----------------------------------------------------------------------------------------------------
+q01_low         15            0        0.0%       0.0%       0.000       
+q02_low         96            2        2.1%       2.1%       0.174       
+q03_medium      49            9        18.4%      18.4%      1.000       
+q04_medium      61            7        11.5%      11.5%      0.956       
+q05_high        49            8        16.3%      20.4%      1.000       
+q06_high        21            0        0.0%       0.0%       0.000       
+q01_low         60            1        1.7%       1.7%       0.130       
+q02_low         121           7        5.8%       5.8%       0.393       
+q03_medium      46            3        6.5%       6.5%       0.434       
+q04_medium      52            1        1.9%       1.9%       0.149       
+q05_high        157           9        5.7%       5.7%       0.390       
+q06_high        74            3        4.0%       4.0%       0.291       
+q06_high        282           7        2.5%       2.5%       0.188       
+q24_high        254           8        3.1%       3.1%       0.233       
+q10_low         208           7        3.4%       3.4%       0.247       
+q11_low         243           16       6.6%       6.6%       0.437       
+q16_medium      188           4        2.1%       2.1%       0.163       
+q17_medium      138           7        5.1%       5.1%       0.353       
+----------------------------------------------------------------------------------------------------
+Notes: Detects disfluency markers (um, uh, like, so, etc.).
+       'Um'/'uh' weighted 2x; others weighted 1x.
+
+
+----------------------------------------------------------------------------------------------------
+SEMANTIC DENSITY AGENT                                                                              
+----------------------------------------------------------------------------------------------------
+Recording       Density Score   Final Score  Truncated    Reasoning                               
+----------------------------------------------------------------------------------------------------
+q01_low         0.2             0.800        No           The transcript contains simple, repet...
+q02_low         0.2             0.800        No           The transcript is mostly descriptive ...
+q03_medium      0.2             0.800        No           The transcript contains repetitive an...
+q04_medium      0.7             0.300        No           The transcript provides a clear and c...
+q05_high        0.2             0.800        No           The transcript contains repetitive an...
+q06_high        0.0             1.000        No           The transcript is highly repetitive a...
+q01_low         0.2             0.800        No           The transcript contains vague stateme...
+q02_low         0.3             0.650        No           The speaker provides a descriptive li...
+q03_medium      0.2             0.800        No           The transcript contains vague and rep...
+q04_medium      0.6             0.400        No           The speaker provides a clear and stru...
+q05_high        0.7             0.300        No           The speaker presents a clear, step-by...
+q06_high        0.7             0.300        No           The speaker provides a clear, step-by...
+q06_high        0.3             0.650        No           The speaker's response is vague and l...
+q24_high        0.3             0.650        No           The speaker's approach to problem-sol...
+q10_low         0.3             0.650        No           The transcript contains some personal...
+q11_low         0.3             0.650        No           The transcript contains some descript...
+q16_medium      0.3             0.650        No           The speaker provides some vague ideas...
+q17_medium      0.2             0.800        No           The transcript is characterized by va...
+----------------------------------------------------------------------------------------------------
+Notes: LLM-based information density measurement (0=high info, 1=low info).
+       Score inverted: Low density → high cognitive load.
+
+
+----------------------------------------------------------------------------------------------------
+SYNTACTIC COMPLEXITY AGENT                                                                          
+----------------------------------------------------------------------------------------------------
+Recording       Sentences    Avg Len    Depth    Sub%     Unreliable   Final Score 
+----------------------------------------------------------------------------------------------------
+q01_low         1            15.0       0.0      0.0%     YES          0.500       
+q02_low         2            48.0       5.0      0.0%     YES          0.500       
+q03_medium      1            49.0       3.0      0.0%     YES          0.500       
+q04_medium      2            30.5       2.0      1.6%     YES          0.500       
+q05_high        2            25.0       5.0      2.0%     YES          0.500       
+q06_high        3            7.7        5.0      0.0%     NO           0.659       
+q01_low         2            33.0       7.0      7.6%     NO           0.199       
+q02_low         3            42.7       7.0      10.2%    NO           0.167       
+q03_medium      1            47.0       7.0      4.3%     NO           0.240       
+q04_medium      1            56.0       10.0     8.9%     NO           0.138       
+q05_high        9            19.4       5.6      7.4%     NO           0.353       
+q06_high        1            77.0       10.0     14.3%    NO           0.071       
+q06_high        10           31.9       5.8      12.8%    NO           0.186       
+q24_high        19           15.4       3.8      11.9%    NO           0.438       
+q10_low         13           20.2       4.4      14.1%    NO           0.309       
+q11_low         9            30.0       6.2      13.7%    NO           0.157       
+q16_medium      6            36.3       6.2      10.5%    NO           0.198       
+q17_medium      9            21.0       4.7      4.8%     NO           0.400       
+----------------------------------------------------------------------------------------------------
+Notes: Dependency parse analysis of sentence structure complexity.
+       Marked UNRELIABLE if <3 sentences (fallback to 0.5 score).

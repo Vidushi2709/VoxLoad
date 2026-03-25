@@ -53,7 +53,7 @@ class SpeechRateAgent:
 
         # Rush threshold: WPM above this value triggers the rush penalty
         # (only matters when variance is also high)
-        self._rush_wpm_threshold: float = 130.0
+        self._rush_wpm_threshold: float = 110.0
 
     # Calibration 
 
@@ -160,7 +160,25 @@ class SpeechRateAgent:
                 "wpm_windows": [], "score": 0.5,
             }
 
-        duration_min = (words[-1]["end"] - words[0]["start"]) / 60.0
+        # Guard: reject recordings that are too short for reliable WPM estimation
+        MIN_DURATION_SEC = 20.0
+        MIN_WORDS = 25
+        
+        duration_sec = words[-1]["end"] - words[0]["start"] if len(words) >= 2 else 0
+        if duration_sec < MIN_DURATION_SEC or len(words) < MIN_WORDS:
+            return {
+                "wpm": round(len(words) / (duration_sec / 60.0) if duration_sec > 0 else 0.0, 1),
+                "wpm_variance": 0.0,
+                "wpm_windows": [],
+                "slow_score": 0.0,
+                "variance_score": 0.0,
+                "rush_score": 0.0,
+                "score": 0.5,
+                "unreliable": True,
+                "unreliable_reason": f"Recording too short ({duration_sec:.1f}s, {len(words)} words)"
+            }
+
+        duration_min = duration_sec / 60.0
         avg_wpm      = len(words) / duration_min if duration_min > 0 else 0.0
 
         # Sliding-window WPM variance 

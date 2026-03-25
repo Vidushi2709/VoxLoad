@@ -1,0 +1,24 @@
+{
+  "fillers": [
+    "right",
+    "kind of",
+    "um",
+    "so",
+    "like",
+    "sort of",
+    "basically",
+    "you know",
+    "uh",
+    "literally",
+    "i mean"
+  ],
+  "max_filler_rate": 0.15,
+  "last_result": {
+    "total_words": 21,
+    "total_fillers": 0,
+    "filler_rate": 0.0,
+    "breakdown": {},
+    "score": 0.0,
+    "method": "regex"
+  }
+}
