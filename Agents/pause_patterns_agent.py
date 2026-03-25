@@ -26,8 +26,8 @@ class PausePatternsAgent:
     def __init__(
         self,
         threshold_ms: float       = 200.0,   # minimum gap to count as a pause
-        max_pauses_per_min: float = 25.0,    # calibration ceiling for rate score
-        max_pause_ms: float       = 2500.0,  # calibration ceiling for duration score
+        max_pauses_per_min: float = 30.0,    # calibration ceiling for rate score 
+        max_pause_ms: float       = 1200.0,  # calibration ceiling for duration score 
         long_pause_threshold_ms: float = 1000.0,  # "notably long" pause cutoff
     ):
         self.threshold_ms            = threshold_ms
@@ -96,12 +96,21 @@ class PausePatternsAgent:
         duration_score = min(mean_pause  / self.max_pause_ms,      1.0)
         long_score     = long_frac                                        # 0–1 already
 
-        # Weighted blend: rate is most important; long pauses get bonus weight
-        raw_score = rate_score * 0.45 + duration_score * 0.35 + long_score * 0.20
+        # Apply nonlinear scaling per component before blending
+        def _scale(x, power=0.75):
+            return round(x ** power, 4) if x > 0 else 0.0
 
-        # Nonlinear scaling: x^0.75 stretches mid-high values upward.
-        # Long pauses that barely miss the ceiling now matter much more.
-        score = round(raw_score ** 0.75, 3)
+        rate_score_scaled     = _scale(rate_score)
+        duration_score_scaled = _scale(duration_score)
+        long_score_scaled     = _scale(long_score)
+
+        # Weighted blend of scaled components
+        score = round(
+            rate_score_scaled     * 0.45 +
+            duration_score_scaled * 0.35 +
+            long_score_scaled     * 0.20,
+            3
+        )
 
         result = {
             "pause_count":          len(gaps),
@@ -109,8 +118,7 @@ class PausePatternsAgent:
             "pause_rate_per_min":   round(pause_rate, 2),
             "long_pause_fraction":  round(long_frac,  3),
             "pause_durations_ms":   [round(g, 1) for g in gaps],
-            "raw_score":            round(raw_score, 3),   # pre-scaling (for diagnostics)
-            "score":                score,                  # nonlinear-scaled
+            "score":                score,
         }
         self.last_result = result
         return result

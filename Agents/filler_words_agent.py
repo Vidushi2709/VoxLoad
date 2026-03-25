@@ -16,10 +16,17 @@ Two weighting tiers
   NORMAL fillers       – hedges / discourse markers:  "like", "you know", etc.
 
 High-weight fillers contribute 2× to the total filler count before rate scoring.
+
+Scoring: Logarithmic scaling
+-----------------------------
+Uses log(1 + ratio) where ratio = weighted_filler_rate / max_filler_rate.
+This avoids hard ceiling bunching: recordings with 1.5× or 2× the baseline
+now spread across [0.5, 0.9] instead of both mapping to 1.0.
 """
 
 import re
 import json
+import math
 from typing import Dict, List, Optional, Set
 
 
@@ -116,10 +123,12 @@ class FillerPatternsAgent:
 
     # Weighted total 
 
-    def _weighted_total(self, counts: Dict[str, int]) -> float:
+    def _weighted_total(self, counts: Dict[str, int], high_weight: Set[str] = None) -> float:
+        if high_weight is None:
+            high_weight = self.high_weight
         total = 0.0
         for filler, n in counts.items():
-            weight = self.high_weight_mult if filler in self.high_weight else 1.0
+            weight = self.high_weight_mult if filler in high_weight else 1.0
             total += n * weight
         return total
 
@@ -136,11 +145,28 @@ class FillerPatternsAgent:
         -------
         {total_words, total_fillers, weighted_fillers, filler_rate,
          weighted_rate, breakdown, score, method}
+        
+        Scoring (logarithmic)
+        --------------------
+        Ratio = weighted_rate / max_filler_rate
+        Score = log(1 + ratio) / log(2)
+        
+        Examples:
+          ratio=0   → score=0.000
+          ratio=1   → score=1.000  (baseline)
+          ratio=1.5 → score=1.170  (→ min cap at 1.0)
+          ratio=2   → score=1.585  (→ min cap at 1.0)
+        
+        This compresses values > baseline smoothly instead of hard ceiling,
+        allowing discrimination between "filler-heavy" recordings.
         """
         if not isinstance(transcript_text, str):
             raise ValueError("transcript_text must be a string")
 
         total_words = len(transcript_text.split())
+
+        # Local copy — never touch self.high_weight here
+        local_high_weight = set(self.high_weight)
 
         # These are HIGH-weight disfluencies distinct from discourse "so".
         so_arith_count = len(_SO_ARITH_PATTERN.findall(transcript_text))
@@ -154,22 +180,36 @@ class FillerPatternsAgent:
         # Subtract arithmetic "so" from discourse "so" to avoid double-counting
         if so_arith_count > 0:
             discourse_so = filler_counts.get("so", 0) - so_arith_count
-            if discourse_so > 0:
-                filler_counts["so"] = discourse_so
-            elif "so" in filler_counts:
+            filler_counts["so"] = max(0, discourse_so)
+            if filler_counts["so"] == 0:
                 del filler_counts["so"]
-            if so_arith_count > 0:
-                filler_counts["so (arith)"] = so_arith_count
-                # Mark it so _weighted_total treats it as HIGH weight
-                self.high_weight.add("so (arith)")
+            filler_counts["so (arith)"] = so_arith_count
+            local_high_weight.add("so (arith)")   # ← local only
 
         raw_total      = sum(filler_counts.values())
-        weighted_total = self._weighted_total(filler_counts)
+        weighted_total = self._weighted_total(filler_counts, local_high_weight)
 
         filler_rate   = raw_total      / total_words if total_words > 0 else 0.0
         weighted_rate = weighted_total / total_words if total_words > 0 else 0.0
 
-        score = round(min(weighted_rate / self.max_filler_rate, 1.0), 3)
+        # Logarithmic scaling: log(1 + ratio) with natural log
+        # This avoids hard ceiling at max_filler_rate while remaining bounded
+        # Natural log asymptotically approaches infinity, so we use soft cap at 0.99
+        ratio = weighted_rate / self.max_filler_rate if self.max_filler_rate > 0 else 0.0
+        if ratio > 0:
+            # ln(1 + ratio) creates smooth logarithmic spread
+            # Examples with max_filler_rate=0.12:
+            #   weighted_rate=0   → ratio=0    → score=0.000
+            #   weighted_rate=0.06 → ratio=0.5 → score≈0.405
+            #   weighted_rate=0.12 → ratio=1   → score≈0.693 (baseline)
+            #   weighted_rate=0.18 → ratio=1.5 → score≈0.917 (q03: was capped at 1.0)
+            #   weighted_rate=0.20 → ratio=1.67→ score≈0.949 (q05: was capped at 1.0)
+            score = round(math.log1p(ratio), 3)  # Natural log, no division
+            # Soft cap at 0.99 to allow near-ceiling discrimination
+            if score > 0.99:
+                score = round(min(score, 0.99), 3)
+        else:
+            score = 0.0
 
         result = {
             "total_words":      total_words,

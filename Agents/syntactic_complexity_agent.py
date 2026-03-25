@@ -87,7 +87,7 @@ class SyntacticComplexityAgent:
         w_tree_depth:     float = 0.35,
         w_subordination:  float = 0.25,
         # Minimum sentences to trust the estimate
-        min_sentences: int = 3,
+        min_sentences: int = 1,
     ):
         self.max_avg_sentence_len   = max_avg_sentence_len
         self.max_avg_tree_depth     = max_avg_tree_depth
@@ -205,12 +205,17 @@ class SyntacticComplexityAgent:
             else self._analyse_fallback(transcript_text)
         )
 
-        # Warn if too few sentences to trust the result
+        # Return neutral score with explicit flag if too few sentences
         if metrics["sentence_count"] < self.min_sentences:
-            print(
-                f"  [syntactic] WARNING: only {metrics['sentence_count']} sentence(s) "
-                f"found — complexity score may be unreliable."
-            )
+            result = {
+                **metrics,
+                "complexity_score": None,
+                "score":            0.5,
+                "unreliable":       True,
+                "unreliable_reason": f"Only {metrics['sentence_count']} sentence(s) — below min {self.min_sentences}",
+            }
+            self.last_result = result
+            return result
 
         # Normalised sub-scores: 1.0 = maximum complexity (expert)
         len_score  = min(metrics["avg_sentence_len"]   / self.max_avg_sentence_len,   1.0)
@@ -232,6 +237,7 @@ class SyntacticComplexityAgent:
             **metrics,
             "complexity_score": complexity_score,   # 0 = simple, 1 = complex
             "score":            score,               # 0 = complex (expert), 1 = simple (overloaded)
+            "unreliable":       False,
         }
         self.last_result = result
         return result

@@ -79,22 +79,33 @@ def _apply_interaction(agent_scores: dict, contributions: dict, norm_w: dict) ->
     if expert_headroom < 1e-4 or "syntactic_complexity" not in norm_w:
         return contributions, 0.0
 
-    # Interaction factor: 0 at floor, 1 at ceil
+    adj = dict(contributions)
+    interaction_delta = 0.0
+
+    # High pause: cancel the syntax discount
     factor = (pause_s - PAUSE_INTERACTION_FLOOR) / (
         PAUSE_INTERACTION_CEIL - PAUSE_INTERACTION_FLOOR
     )
     factor = max(0.0, min(1.0, factor))
 
-    if factor < 1e-4:
-        return contributions, 0.0
+    if factor >= 1e-4:
+        discount_cancelled = norm_w["syntactic_complexity"] * expert_headroom * factor
+        adj["syntactic_complexity"] = round(
+            contributions["syntactic_complexity"] + discount_cancelled, 4
+        )
+        interaction_delta = round(discount_cancelled, 4)
+    # New: Low pause + high complexity → apply expert discount explicitly
+    elif pause_s < PAUSE_INTERACTION_FLOOR and syntax_s < 0.3:
+        # Speaker is fluent AND syntactically complex → reduce load score
+        expert_bonus = norm_w["syntactic_complexity"] * (0.3 - syntax_s) * (
+            1 - pause_s / PAUSE_INTERACTION_FLOOR
+        )
+        adj["syntactic_complexity"] = max(0.0, round(
+            contributions["syntactic_complexity"] - expert_bonus, 4
+        ))
+        interaction_delta = round(-expert_bonus, 4)
 
-    discount_cancelled = norm_w["syntactic_complexity"] * expert_headroom * factor
-
-    adj = dict(contributions)
-    adj["syntactic_complexity"] = round(
-        contributions["syntactic_complexity"] + discount_cancelled, 4
-    )
-    return adj, round(discount_cancelled, 4)
+    return adj, interaction_delta
 
 
 def aggregator(
@@ -126,6 +137,13 @@ def aggregator(
 
     # Only score agents that actually ran
     active_keys = [k for k in w if k in agent_scores]
+    
+    # Exclude unreliable agents and redistribute their weight
+    active_keys = [
+        k for k in active_keys
+        if not agent_scores[k].get("unreliable", False)
+    ]
+    
     if not active_keys:
         raise ValueError("No valid agent scores provided.")
 

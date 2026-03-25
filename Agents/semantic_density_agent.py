@@ -77,30 +77,68 @@ class SemanticDensityAgent:
         self.invert_score   = invert_score
         self.last_result: Optional[dict] = None
 
+    # Truncation helper
+    def _smart_truncate(self, text: str, max_chars: int = MAX_TRANSCRIPT_CHARS) -> str:
+        """Take 30% from start, 70% from end — keeps context and peaks later in speech."""
+        if len(text) <= max_chars:
+            return text
+        
+        head_chars = int(max_chars * 0.30)
+        tail_chars = max_chars - head_chars
+        
+        head = text[:head_chars]
+        tail = text[-tail_chars:]
+        
+        return head + "\n...[truncated]...\n" + tail
+
     # Prompt builders 
 
     @staticmethod
-    def _build_prompt(transcript_text: str) -> str:
-                return f"""You are a cognitive-load researcher analysing speech transcripts.
+    def _build_prompt(transcript_text: str, total_words: int = None, question_text: str = None) -> str:
+        # Calculate word count if not provided
+        if total_words is None:
+            total_words = len(transcript_text.split())
+        
+        # Build context string
+        context_line = f"Note: this is a {total_words}-word spoken answer"
+        if question_text:
+            context_line += f" to the question: '{question_text}'."
+            context_line += "\nRate density relative to what's possible in a spoken answer of this length."
+        else:
+            context_line += ".\nRate density relative to what's possible in a spoken answer of this length."
+        
+        return f"""You are a cognitive-load researcher analysing speech transcripts.
 
-        Rate the SEMANTIC DENSITY of the transcript below on a scale from 0.0 to 1.0:
-        0.0 = very low density  (repetitive, vague, lots of filler, circular reasoning)
-        0.5 = moderate          (some structure, some repetition, partial ideas)
-        1.0 = very high density (precise, information-rich, tightly argued, complex ideas)
+Rate the SEMANTIC DENSITY of the transcript below on a scale from 0.0 to 1.0:
+0.0 = very low density  (repetitive, vague, lots of filler, circular reasoning)
+0.5 = moderate          (some structure, some repetition, partial ideas)
+1.0 = very high density (precise, information-rich, tightly argued, complex ideas)
 
-        Transcript:
-        \"\"\"{transcript_text}\"\"\"
+{context_line}
 
-        Rules:
-        - Reply with ONLY a valid JSON object — no markdown fences, no preamble.
-        - Format: {{"density_score": <float 0.0-1.0>, "reasoning": "<one concise sentence>"}}
-        - density_score must be a number between 0.0 and 1.0 (inclusive).
+Transcript:
+\"\"\"{transcript_text}\"\"\"
+
+Rules:
+- Reply with ONLY a valid JSON object — no markdown fences, no preamble.
+- Format: {{"density_score": <float 0.0-1.0>, "reasoning": "<one concise sentence>"}}
+- density_score must be a number between 0.0 and 1.0 (inclusive).
 """
 
     @staticmethod
-    def _build_retry_prompt(transcript_text: str) -> str:
+    def _build_retry_prompt(transcript_text: str, total_words: int = None, question_text: str = None) -> str:
         """Stricter prompt used on the second attempt."""
+        if total_words is None:
+            total_words = len(transcript_text.split())
+        
+        context_line = f"This is a {total_words}-word spoken answer"
+        if question_text:
+            context_line += f" to: '{question_text}'"
+        context_line += ". Rate density for this length."
+        
         return f"""Analyse this speech transcript and output ONLY valid JSON.
+
+{context_line}
 
 Transcript: "{transcript_text[:500]}"
 
@@ -112,12 +150,13 @@ Replace 0.5 with your actual score between 0.0 and 1.0.
 
     # Main compute 
 
-    async def compute(self, transcript_text: str, client: AsyncOpenAI) -> dict:
+    async def compute(self, transcript_text: str, client: AsyncOpenAI, question_text: str = None) -> dict:
         """
         Parameters
         ----------
         transcript_text : raw transcript string
         client          : openai.AsyncOpenAI pointed at OpenRouter
+        question_text   : (optional) the question that prompted this response
 
         Returns
         -------
@@ -126,22 +165,26 @@ Replace 0.5 with your actual score between 0.0 and 1.0.
         if not isinstance(transcript_text, str) or not transcript_text.strip():
             raise ValueError("transcript_text must be a non-empty string")
 
-        # Truncate very long transcripts
-        truncated = len(transcript_text) > MAX_TRANSCRIPT_CHARS
+        # Count words in original text before truncation
+        total_words = len(transcript_text.split())
+
+        # Smart truncation: take 30% from start, 70% from end
+        original_len = len(transcript_text)
+        transcript_text = self._smart_truncate(transcript_text)
+        truncated = original_len > MAX_TRANSCRIPT_CHARS
         if truncated:
             print(
                 f"  [semantic_density] WARNING: transcript truncated to "
-                f"{MAX_TRANSCRIPT_CHARS} chars (was {len(transcript_text)})."
+                f"{MAX_TRANSCRIPT_CHARS} chars (was {original_len})."
             )
-            transcript_text = transcript_text[:MAX_TRANSCRIPT_CHARS]
 
         # First attempt 
-        parsed = await self._call_llm(client, self._build_prompt(transcript_text))
+        parsed = await self._call_llm(client, self._build_prompt(transcript_text, total_words, question_text))
 
         # Retry on parse failure 
         if parsed is None:
             print("  [semantic_density] Parse failed — retrying with stricter prompt …")
-            parsed = await self._call_llm(client, self._build_retry_prompt(transcript_text))
+            parsed = await self._call_llm(client, self._build_retry_prompt(transcript_text, total_words, question_text))
 
         # Fallback 
         if parsed is None:
@@ -163,14 +206,14 @@ Replace 0.5 with your actual score between 0.0 and 1.0.
         self.last_result = result
         return result
 
-    async def _call_llm(self, client: AsyncOpenAI, prompt: str) -> Optional[dict]:
+    async def _call_llm(self, client: AsyncOpenAI, prompt: str, temperature: float = 0.0) -> Optional[dict]:
         """Call the LLM and attempt JSON extraction. Returns None on any failure."""
         try:
             response = await client.chat.completions.create(
                 model      = self.model,
                 max_tokens = self.max_tokens,
                 messages   = [{"role": "user", "content": prompt}],
-                temperature= 0.0,
+                temperature= temperature,
             )
             raw = response.choices[0].message.content.strip()
             return _extract_json(raw)

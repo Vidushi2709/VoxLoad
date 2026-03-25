@@ -13,6 +13,14 @@ Score semantics
 Two components:
   speed_score    – how slow the speaker is relative to calibration range
   variance_score – variability of WPM across 20-second windows
+
+TEMPORARY CALIBRATION
+---------------------
+Uses hardcoded WPM range (80–200) based on linguistic literature until
+30+ recordings are available for proper fitting.  This prevents overfitting
+to the limited initial dataset.
+
+Literature baseline: normal conversational speech is 120–180 WPM
 """
 
 import json
@@ -29,9 +37,12 @@ except ImportError:
 
 class SpeechRateAgent:
     def __init__(self):
-        self.min_wpm: Optional[float] = None
-        self.max_wpm: Optional[float] = None
-        self.fitted:  bool            = False
+        # TEMPORARY CALIBRATION: hardcoded ranges based on linguistic literature
+        # Normal conversational speech: 120–180 WPM
+        # TODO: Replace with fit() once dataset size is adequate
+        self.min_wpm: Optional[float] = 80.0    # slow/struggling speech
+        self.max_wpm: Optional[float] = 200.0   # fast/fluent speech
+        self.fitted:  bool            = True    # mark as fitted to skip fit() requirement
 
         # Sliding-window config
         self._window_sec: int = 20
@@ -50,7 +61,19 @@ class SpeechRateAgent:
         """
         Compute the WPM range from a representative dataset.
         Call once before run(); or use load() to restore a saved calibration.
+        
+        ⚠️  WARNING: Requires at least 30 recordings for reliable calibration.
+        With fewer recordings, will overfit to your limited dataset.
+        Use hardcoded defaults (80–200 WPM) until you have adequate data.
         """
+        if len(all_words_list) < 30:
+            print(
+                f"⚠️  WARNING: fit() called with only {len(all_words_list)} recordings. "
+                f"Recommend 30+ for reliable calibration. Using hardcoded defaults: "
+                f"80–200 WPM."
+            )
+            return
+        
         wpm_values = []
         for words in all_words_list:
             if len(words) < 2:
@@ -65,7 +88,7 @@ class SpeechRateAgent:
         self.min_wpm = min(wpm_values)
         self.max_wpm = max(wpm_values)
         self.fitted  = True
-        print(f"Fitted — WPM range: {self.min_wpm:.1f} → {self.max_wpm:.1f}")
+        print(f"✓ Fitted on {len(wpm_values)} recordings — WPM range: {self.min_wpm:.1f} → {self.max_wpm:.1f}")
 
     def save(self, path: str) -> None:
         with open(path, "w") as f:
@@ -124,10 +147,13 @@ class SpeechRateAgent:
 
         Returns
         -------
-        {wpm, wpm_variance, wpm_windows, score, [audio_features]}
+        {wpm, wpm_variance, wpm_windows, slow_score, variance_score, rush_score, score, [audio_features]}
+        
+        Note: Currently uses hardcoded WPM calibration (80–200) for consistency.
+        Will be replaced with fitted calibration once 30+ recordings are available.
         """
         if not self.fitted:
-            raise RuntimeError("Call fit() or load() before run()")
+            raise RuntimeError("Call fit() or load() before run() — or use hardcoded defaults")
         if not words:
             return {
                 "wpm": 0.0, "wpm_variance": 0.0,
