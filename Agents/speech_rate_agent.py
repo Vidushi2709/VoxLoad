@@ -38,8 +38,11 @@ class SpeechRateAgent:
         self._step_sec:   int = 5
 
         # Variance normaliser: variance (in WPM²) at which variance_score = 1.0
-        # Empirically ~400 WPM² covers most natural variation.
         self._max_variance: float = 400.0
+
+        # Rush threshold: WPM above this value triggers the rush penalty
+        # (only matters when variance is also high)
+        self._rush_wpm_threshold: float = 130.0
 
     # Calibration 
 
@@ -67,16 +70,21 @@ class SpeechRateAgent:
     def save(self, path: str) -> None:
         with open(path, "w") as f:
             json.dump(
-                {"min_wpm": self.min_wpm, "max_wpm": self.max_wpm},
+                {
+                    "min_wpm":            self.min_wpm,
+                    "max_wpm":            self.max_wpm,
+                    "rush_wpm_threshold": self._rush_wpm_threshold,
+                },
                 f, indent=2,
             )
 
     def load(self, path: str) -> None:
         with open(path) as f:
             data = json.load(f)
-        self.min_wpm = data["min_wpm"]
-        self.max_wpm = data["max_wpm"]
-        self.fitted  = True
+        self.min_wpm              = data["min_wpm"]
+        self.max_wpm              = data["max_wpm"]
+        self._rush_wpm_threshold  = data.get("rush_wpm_threshold", 130.0)
+        self.fitted               = True
 
     # Optional audio features (requires librosa) 
 
@@ -141,23 +149,31 @@ class SpeechRateAgent:
 
         variance = float(np.var(wpm_windows)) if wpm_windows else 0.0
 
-        # Score components 
+        # Score components
         wpm_range = (self.max_wpm - self.min_wpm) if self.max_wpm != self.min_wpm else 1.0
 
-        # speed_score: 0 = fast (low load), 1 = slow (high load)
-        speed_score = (avg_wpm - self.min_wpm) / wpm_range
-        speed_score = 1.0 - max(0.0, min(1.0, speed_score))  # invert: slower = higher load
+        # 1. slow_score: 0 = fast (low load), 1 = slow (high load)
+        slow_score = 1.0 - max(0.0, min(1.0, (avg_wpm - self.min_wpm) / wpm_range))
 
-        # variance_score: 0 = steady, 1 = highly variable
+        # 2. variance_score: 0 = steady, 1 = highly variable
         variance_score = min(variance / self._max_variance, 1.0)
 
-        score = round(speed_score * 0.6 + variance_score * 0.4, 3)
+        # 3. rush_score: fast + erratic → elevated load
+        rush_factor = max(0.0, avg_wpm - self._rush_wpm_threshold) / self._rush_wpm_threshold
+        rush_factor = min(1.0, rush_factor)
+        rush_score  = rush_factor * variance_score   # zero if speech is steady
+
+        # Weighted blend
+        score = round(slow_score * 0.45 + variance_score * 0.35 + rush_score * 0.20, 3)
 
         result: Dict = {
-            "wpm":          round(avg_wpm,  1),
-            "wpm_variance": round(variance, 2),
-            "wpm_windows":  [round(w, 1) for w in wpm_windows],
-            "score":        score,
+            "wpm":            round(avg_wpm,  1),
+            "wpm_variance":   round(variance, 2),
+            "wpm_windows":    [round(w, 1) for w in wpm_windows],
+            "slow_score":     round(slow_score,     3),
+            "variance_score": round(variance_score, 3),
+            "rush_score":     round(rush_score,     3),
+            "score":          score,
         }
 
         if audio_path:

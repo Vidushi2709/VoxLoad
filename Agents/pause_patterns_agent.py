@@ -97,7 +97,11 @@ class PausePatternsAgent:
         long_score     = long_frac                                        # 0–1 already
 
         # Weighted blend: rate is most important; long pauses get bonus weight
-        score = round(rate_score * 0.45 + duration_score * 0.35 + long_score * 0.20, 3)
+        raw_score = rate_score * 0.45 + duration_score * 0.35 + long_score * 0.20
+
+        # Nonlinear scaling: x^0.75 stretches mid-high values upward.
+        # Long pauses that barely miss the ceiling now matter much more.
+        score = round(raw_score ** 0.75, 3)
 
         result = {
             "pause_count":          len(gaps),
@@ -105,7 +109,8 @@ class PausePatternsAgent:
             "pause_rate_per_min":   round(pause_rate, 2),
             "long_pause_fraction":  round(long_frac,  3),
             "pause_durations_ms":   [round(g, 1) for g in gaps],
-            "score":                score,
+            "raw_score":            round(raw_score, 3),   # pre-scaling (for diagnostics)
+            "score":                score,                  # nonlinear-scaled
         }
         self.last_result = result
         return result

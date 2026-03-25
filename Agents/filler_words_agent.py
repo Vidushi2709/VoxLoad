@@ -36,6 +36,8 @@ except Exception:
 # Strong disfluency markers — counted at 2× weight
 HIGH_WEIGHT_FILLERS: Set[str] = {
     "um", "uh", "er", "erm", "uhh", "umm",
+    # "so" before a digit (arithmetic step marker) is handled via special regex
+    # and injected as "so_arith" which maps to HIGH weight
 }
 
 # Hedges, discourse markers, and verbal tics — counted at 1× weight
@@ -44,9 +46,13 @@ NORMAL_FILLERS: Set[str] = {
     "kind of", "sort of", "i mean", "right",
     "actually", "honestly", "obviously", "clearly",
     "well", "okay", "so", "anyway",
+    "then", "and then", "you see",
 }
 
 ALL_FILLERS: Set[str] = HIGH_WEIGHT_FILLERS | NORMAL_FILLERS
+
+# Special pattern: "so" immediately before a digit → arithmetic step marker (HIGH weight)
+_SO_ARITH_PATTERN = re.compile(r"\bso\s+(?=\d)", re.IGNORECASE)
 
 
 class FillerPatternsAgent:
@@ -136,11 +142,27 @@ class FillerPatternsAgent:
 
         total_words = len(transcript_text.split())
 
+        # These are HIGH-weight disfluencies distinct from discourse "so".
+        so_arith_count = len(_SO_ARITH_PATTERN.findall(transcript_text))
+
         filler_counts = (
             self._count_with_spacy(transcript_text)
             if use_spacy
             else self._count_with_regex(transcript_text)
         )
+
+        # Subtract arithmetic "so" from discourse "so" to avoid double-counting
+        if so_arith_count > 0:
+            discourse_so = filler_counts.get("so", 0) - so_arith_count
+            if discourse_so > 0:
+                filler_counts["so"] = discourse_so
+            elif "so" in filler_counts:
+                del filler_counts["so"]
+            if so_arith_count > 0:
+                filler_counts["so (arith)"] = so_arith_count
+                # Mark it so _weighted_total treats it as HIGH weight
+                self.high_weight.add("so (arith)")
+
         raw_total      = sum(filler_counts.values())
         weighted_total = self._weighted_total(filler_counts)
 
@@ -150,14 +172,14 @@ class FillerPatternsAgent:
         score = round(min(weighted_rate / self.max_filler_rate, 1.0), 3)
 
         result = {
-            "total_words":     total_words,
-            "total_fillers":   raw_total,
+            "total_words":      total_words,
+            "total_fillers":    raw_total,
             "weighted_fillers": round(weighted_total, 2),
-            "filler_rate":     round(filler_rate,   4),
-            "weighted_rate":   round(weighted_rate,  4),
-            "breakdown":       filler_counts,
-            "score":           score,            # 0 = clean, 1 = filler-heavy
-            "method":          "spacy" if (use_spacy and SPACY_AVAILABLE) else "regex",
+            "filler_rate":      round(filler_rate,   4),
+            "weighted_rate":    round(weighted_rate,  4),
+            "breakdown":        filler_counts,
+            "score":            score,            # 0 = clean, 1 = filler-heavy
+            "method":           "spacy" if (use_spacy and SPACY_AVAILABLE) else "regex",
         }
         self.last_result = result
         return result
