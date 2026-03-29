@@ -27,6 +27,8 @@ import json
 import numpy as np
 from typing import List, Dict, Optional
 
+# Import z-score helper
+from z_score import compute_z_score
 
 try:
     import librosa
@@ -106,7 +108,7 @@ class SpeechRateAgent:
             data = json.load(f)
         self.min_wpm              = data["min_wpm"]
         self.max_wpm              = data["max_wpm"]
-        self._rush_wpm_threshold  = data.get("rush_wpm_threshold", 130.0)
+        self._rush_wpm_threshold  = data.get("rush_wpm_threshold", 110.0)
         self.fitted               = True
 
     # Optional audio features (requires librosa) 
@@ -138,16 +140,18 @@ class SpeechRateAgent:
 
     # Main compute 
 
-    def run(self, words: List[Dict], audio_path: Optional[str] = None) -> Dict:
+    def run(self, words: List[Dict], audio_path: Optional[str] = None, speaker_id: Optional[str] = None, baselines: Optional[Dict] = None) -> Dict:
         """
         Parameters
         ----------
         words      : list of {word, start, end} dicts from Whisper
         audio_path : optional path for librosa feature extraction
+        speaker_id : (optional) speaker identifier for z-score computation
+        baselines  : (optional) {speaker_id: {agent: baseline, ...}, "_population_std": {agent: std, ...}}
 
         Returns
         -------
-        {wpm, wpm_variance, wpm_windows, slow_score, variance_score, rush_score, score, [audio_features]}
+        {wpm, wpm_variance, wpm_windows, slow_score, variance_score, rush_score, raw_score, score (z-score), [audio_features]}
         
         Note: Currently uses hardcoded WPM calibration (80–200) for consistency.
         Will be replaced with fitted calibration once 30+ recordings are available.
@@ -157,7 +161,7 @@ class SpeechRateAgent:
         if not words:
             return {
                 "wpm": 0.0, "wpm_variance": 0.0,
-                "wpm_windows": [], "score": 0.5,
+                "wpm_windows": [], "raw_score": 0.5, "score": 0.0,
             }
 
         # Guard: reject recordings that are too short for reliable WPM estimation
@@ -173,7 +177,8 @@ class SpeechRateAgent:
                 "slow_score": 0.0,
                 "variance_score": 0.0,
                 "rush_score": 0.0,
-                "score": 0.5,
+                "raw_score": 0.5,
+                "score": 0.0,
                 "unreliable": True,
                 "unreliable_reason": f"Recording too short ({duration_sec:.1f}s, {len(words)} words)"
             }
@@ -208,7 +213,14 @@ class SpeechRateAgent:
         rush_score  = rush_factor * variance_score   # zero if speech is steady
 
         # Weighted blend
-        score = round(slow_score * 0.45 + variance_score * 0.35 + rush_score * 0.20, 3)
+        raw_score = round(slow_score * 0.45 + variance_score * 0.35 + rush_score * 0.20, 3)
+
+        # Compute z-score if baselines available
+        z_score = raw_score
+        if speaker_id and baselines:
+            speaker_baseline = baselines.get(speaker_id, {})
+            baseline = speaker_baseline.get("speech_rate", raw_score)
+            z_score = compute_z_score(raw_score, baseline, "speech_rate")
 
         result: Dict = {
             "wpm":            round(avg_wpm,  1),
@@ -217,7 +229,8 @@ class SpeechRateAgent:
             "slow_score":     round(slow_score,     3),
             "variance_score": round(variance_score, 3),
             "rush_score":     round(rush_score,     3),
-            "score":          score,
+            "raw_score":      raw_score,
+            "score":          z_score,           # z-score
         }
 
         if audio_path:

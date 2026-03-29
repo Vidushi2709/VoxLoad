@@ -1,6 +1,6 @@
 # Speech Cognitive Load Analyser
 
-A multi-agent pipeline that estimates **cognitive load** from speech recordings. Give it an MP4 (or WAV) and it returns a load score between 0 (low) and 1 (high), backed by four specialised agents.
+A multi-agent pipeline that estimates **cognitive load** from speech recordings. Give it an MP4 (or WAV) and it returns a z-score, letting you define what "high" means for your use case.
 
 ---
 
@@ -21,7 +21,7 @@ MP4 / WAV
    └──▶  SemanticDensityAgent (LLM density score via OpenRouter)
               │
               ▼
-         AggregatorAgent  →  load_score  [0–1]  +  label (low / medium / high)
+         AggregatorAgent  →  load_score (z-score)  +  confidence (0–1)
 ```
 
 ---

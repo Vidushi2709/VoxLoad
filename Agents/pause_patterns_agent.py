@@ -21,14 +21,17 @@ import json
 import numpy as np
 from typing import List, Dict, Optional
 
+# Import z-score helper
+from z_score import compute_z_score
+
 
 class PausePatternsAgent:
     def __init__(
         self,
         threshold_ms: float       = 200.0,   # minimum gap to count as a pause
         max_pauses_per_min: float = 30.0,    # calibration ceiling for rate score 
-        max_pause_ms: float       = 1200.0,  # calibration ceiling for duration score 
-        long_pause_threshold_ms: float = 1000.0,  # "notably long" pause cutoff
+        max_pause_ms: float       = 2000.0,  # calibration ceiling for duration score (increased from 1200)
+        long_pause_threshold_ms: float = 800.0,  # "notably long" pause cutoff (lowered from 1000)
     ):
         self.threshold_ms            = threshold_ms
         self.max_pauses_per_min      = max_pauses_per_min
@@ -49,16 +52,18 @@ class PausePatternsAgent:
 
     # Main compute   
 
-    def compute(self, word_timestamps: List[Dict]) -> Dict:
+    def compute(self, word_timestamps: List[Dict], speaker_id: Optional[str] = None, baselines: Optional[Dict] = None) -> Dict:
         """
         Parameters
         ----------
         word_timestamps : list of {word, start, end} dicts
+        speaker_id      : (optional) speaker identifier for z-score computation
+        baselines       : (optional) {speaker_id: {agent: baseline, ...}, "_population_std": {agent: std, ...}}
 
         Returns
         -------
         {pause_count, mean_pause_ms, pause_rate_per_min, long_pause_fraction,
-         pause_durations_ms, score}
+         pause_durations_ms, raw_score, score (z-score)}
         """
         self._validate_input(word_timestamps)
 
@@ -69,8 +74,15 @@ class PausePatternsAgent:
                 "pause_rate_per_min":   0.0,
                 "long_pause_fraction":  0.0,
                 "pause_durations_ms":   [],
-                "score":                0.5,
+                "raw_score":            0.5,
+                "score":                0.0,  # z-score (will be computed below if baselines provided)
             }
+            # Compute z-score if baselines available
+            if speaker_id and baselines:
+                speaker_baseline = baselines.get(speaker_id, {})
+                baseline = speaker_baseline.get("pause_patterns", 0.5)
+                std = baselines.get("_population_std", {}).get("pause_patterns", 1.0)
+                result["score"] = round((result["raw_score"] - baseline) / std if std > 0 else 0.0, 4)
             self.last_result = result
             return result
 
@@ -105,12 +117,19 @@ class PausePatternsAgent:
         long_score_scaled     = _scale(long_score)
 
         # Weighted blend of scaled components
-        score = round(
+        raw_score = round(
             rate_score_scaled     * 0.45 +
             duration_score_scaled * 0.35 +
             long_score_scaled     * 0.20,
             3
         )
+
+        # Compute z-score if baselines available
+        z_score = raw_score
+        if speaker_id and baselines:
+            speaker_baseline = baselines.get(speaker_id, {})
+            baseline = speaker_baseline.get("pause_patterns", raw_score)
+            z_score = compute_z_score(raw_score, baseline, "pause_patterns")
 
         result = {
             "pause_count":          len(gaps),
@@ -118,7 +137,8 @@ class PausePatternsAgent:
             "pause_rate_per_min":   round(pause_rate, 2),
             "long_pause_fraction":  round(long_frac,  3),
             "pause_durations_ms":   [round(g, 1) for g in gaps],
-            "score":                score,
+            "raw_score":            raw_score,
+            "score":                z_score,      # z-score
         }
         self.last_result = result
         return result

@@ -29,6 +29,11 @@ import json
 import math
 from typing import Dict, List, Optional, Set
 
+_LOG2 = math.log(2)  # Normalization constant for log scale
+
+# Import z-score helper
+from z_score import compute_z_score
+
 
 try:
     import spacy
@@ -53,10 +58,39 @@ NORMAL_FILLERS: Set[str] = {
     "kind of", "sort of", "i mean", "right",
     "actually", "honestly", "obviously", "clearly",
     "well", "okay", "so", "anyway",
-    "then", "and then", "you see",
 }
 
-ALL_FILLERS: Set[str] = HIGH_WEIGHT_FILLERS | NORMAL_FILLERS
+HINDI_ENGLISH_FILLERS = {
+    # universal disfluencies
+    "um", "uh", "er", "hmm",
+
+    # standard English fillers common in Indian English
+    "basically", "actually", "literally", "obviously",
+    "you know", "i mean", "like", "so", "right",
+    "kind of", "sort of", "you see", "isn't it",
+
+    # Indian English specific
+    "na", "no",           # sentence-final confirmation markers ("it works, na?")
+    "only",               # emphatic ("I told you only")
+    "itself",             # emphatic ("the system itself is slow")
+    "that is",            # filler bridge between thoughts
+    "what to say",        # Hindi: "kya bolun"
+    "how to say",         # Hindi: "kaise bolun"  
+    "what is it",         # searching for a word
+    "means",              # Hindi: "matlab" used as filler
+    "matlab",             # direct Hindi filler, sometimes used mid-English sentence
+    "arre",               # surprise/filler
+    "achha",              # acknowledgment used mid-sentence
+    "waise",              # "by the way" used as filler
+    "thoda",              # "a little" used as hedge
+    "basically what happens is",   # common Indian English opener
+    "so basically",
+    "so actually",
+    "and all",            # Hindi: "wagera wagera" equivalent
+    "et cetera et cetera", # over-used in Indian academic speech
+}
+
+ALL_FILLERS: Set[str] = HIGH_WEIGHT_FILLERS | NORMAL_FILLERS | HINDI_ENGLISH_FILLERS
 
 # Special pattern: "so" immediately before a digit → arithmetic step marker (HIGH weight)
 _SO_ARITH_PATTERN = re.compile(r"\bso\s+(?=\d)", re.IGNORECASE)
@@ -134,31 +168,31 @@ class FillerPatternsAgent:
 
     # Main compute 
 
-    def compute(self, transcript_text: str, use_spacy: bool = True) -> Dict:
+    def compute(self, transcript_text: str, use_spacy: bool = True, speaker_id: Optional[str] = None, baselines: Optional[Dict] = None) -> Dict:
         """
         Parameters
         ----------
         transcript_text : raw transcript string (no timestamps needed)
         use_spacy       : prefer spaCy lemmatisation when available
+        speaker_id      : (optional) speaker identifier for z-score computation
+        baselines       : (optional) {speaker_id: {agent: baseline, ...}, "_population_std": {agent: std, ...}}
 
         Returns
         -------
         {total_words, total_fillers, weighted_fillers, filler_rate,
-         weighted_rate, breakdown, score, method}
+         weighted_rate, breakdown, raw_score, score (z-score), method}
         
         Scoring (logarithmic)
         --------------------
         Ratio = weighted_rate / max_filler_rate
-        Score = log(1 + ratio) / log(2)
+        Score = ln(1 + ratio) / ln(2), capped at 0.99
         
-        Examples:
-          ratio=0   → score=0.000
-          ratio=1   → score=1.000  (baseline)
-          ratio=1.5 → score=1.170  (→ min cap at 1.0)
-          ratio=2   → score=1.585  (→ min cap at 1.0)
-        
-        This compresses values > baseline smoothly instead of hard ceiling,
-        allowing discrimination between "filler-heavy" recordings.
+        Examples (with max_filler_rate=0.12):
+          weighted_rate=0    → ratio=0    → score=0.000
+          weighted_rate=0.06 → ratio=0.5  → score≈0.585
+          weighted_rate=0.12 → ratio=1.0  → score=1.000  (baseline)
+          weighted_rate=0.18 → ratio=1.5  → score≈1.322 → capped at 0.99
+          weighted_rate=0.20 → ratio=1.67 → score≈1.408 → capped at 0.99
         """
         if not isinstance(transcript_text, str):
             raise ValueError("transcript_text must be a string")
@@ -192,24 +226,23 @@ class FillerPatternsAgent:
         filler_rate   = raw_total      / total_words if total_words > 0 else 0.0
         weighted_rate = weighted_total / total_words if total_words > 0 else 0.0
 
-        # Logarithmic scaling: log(1 + ratio) with natural log
-        # This avoids hard ceiling at max_filler_rate while remaining bounded
-        # Natural log asymptotically approaches infinity, so we use soft cap at 0.99
+        # Logarithmic scaling: ln(1 + ratio) / ln(2)
+        # Normalized so ratio=1.0 maps to score=1.0 (baseline = typical agent range)
+        # Soft cap at 0.99 allows discrimination between heavy-filler speakers
         ratio = weighted_rate / self.max_filler_rate if self.max_filler_rate > 0 else 0.0
         if ratio > 0:
-            # ln(1 + ratio) creates smooth logarithmic spread
-            # Examples with max_filler_rate=0.12:
-            #   weighted_rate=0   → ratio=0    → score=0.000
-            #   weighted_rate=0.06 → ratio=0.5 → score≈0.405
-            #   weighted_rate=0.12 → ratio=1   → score≈0.693 (baseline)
-            #   weighted_rate=0.18 → ratio=1.5 → score≈0.917 (q03: was capped at 1.0)
-            #   weighted_rate=0.20 → ratio=1.67→ score≈0.949 (q05: was capped at 1.0)
-            score = round(math.log1p(ratio), 3)  # Natural log, no division
-            # Soft cap at 0.99 to allow near-ceiling discrimination
-            if score > 0.99:
-                score = round(min(score, 0.99), 3)
+            # ln(1 + ratio) / ln(2) creates smooth logarithmic spread
+            # Normalized so baseline (weighted_rate = max_filler_rate) → score = 1.0
+            raw_score = round(min(math.log1p(ratio) / _LOG2, 0.99), 3)
         else:
-            score = 0.0
+            raw_score = 0.0
+
+        # Compute z-score if baselines available
+        z_score = raw_score
+        if speaker_id and baselines:
+            speaker_baseline = baselines.get(speaker_id, {})
+            baseline = speaker_baseline.get("filler_words", raw_score)
+            z_score = compute_z_score(raw_score, baseline, "filler_words")
 
         result = {
             "total_words":      total_words,
@@ -218,7 +251,8 @@ class FillerPatternsAgent:
             "filler_rate":      round(filler_rate,   4),
             "weighted_rate":    round(weighted_rate,  4),
             "breakdown":        filler_counts,
-            "score":            score,            # 0 = clean, 1 = filler-heavy
+            "raw_score":        raw_score,
+            "score":            z_score,           # z-score
             "method":           "spacy" if (use_spacy and SPACY_AVAILABLE) else "regex",
         }
         self.last_result = result
