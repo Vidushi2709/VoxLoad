@@ -1,4 +1,4 @@
-# Voice as a Proxy for Cognitive Load
+# VoxLoad: Voice as a Proxy for Cognitive Load
 
 A multi-agent pipeline that estimates **cognitive load** from speech recordings using within-speaker z-score normalization. Give it an MP4 (or WAV) and a speaker baseline, and it returns normalized deviation scores for pause patterns, filler words, and speech rate.
 
@@ -18,7 +18,7 @@ MP4 / WAV
    ├──▶  SpeechRateAgent      (WPM + variance)
    ├──▶  PausePatternsAgent   (pause count, duration, long-pause fraction)
    ├──▶  FillerWordsAgent     (um/uh/like/… weighted counts)
-   └──▶  SemanticDensityAgent (LLM density score via OpenRouter)
+   └──▶  SemanticDensityAgent (LLM density — NOT IN USE: unstable)
               │
               ▼
          AggregatorAgent  →  load_score (z-score)  +  confidence (0–1)
@@ -47,14 +47,14 @@ No consistent directional pattern across speakers or difficulty levels. More sen
 
 ## Agents
 
-| Agent | Method | What it measures |
-|-------|--------|-----------------|
-| **SpeechRateAgent** | Algorithmic | Words-per-minute and its sliding-window variance. Slower + more variable = higher load. |
-| **PausePatternsAgent** | Algorithmic | Pause rate (per min), mean pause duration, and fraction of long pauses (>1 s). |
-| **FillerWordsAgent** | Regex / spaCy | `um`, `uh`, `er` etc. counted at 2× weight; hedges (`like`, `actually`, `well`, …) at 1×. |
-| **SemanticDensityAgent** | LLM (OpenRouter) | Asks an LLM to rate how information-dense the speech is; inverted so vague = high load. |
+| Agent | Method | What it measures | Status |
+|-------|--------|-----------------|--------|
+| **SpeechRateAgent** | Algorithmic | Words-per-minute and its sliding-window variance. Slower + more variable = higher load. | ✓ Active |
+| **PausePatternsAgent** | Algorithmic | Pause rate (per min), mean pause duration, and fraction of long pauses (>1 s). | ✓ Active |
+| **FillerWordsAgent** | Regex / spaCy | `um`, `uh`, `er` etc. counted at 2× weight; hedges (`like`, `actually`, `well`, …) at 1×. | ✓ Active |
+| **SemanticDensityAgent** | LLM (OpenRouter) | Asks an LLM to rate how information-dense the speech is; inverted so vague = high load. | ✗ Not in use (unstable) |
 
-Aggregator weights: `pause_patterns 35% · speech_rate 30% · filler_words 25% · semantic_density 10%`
+Aggregator weights (active agents): `pause_patterns 41% · speech_rate 35% · filler_words 29%`
 
 ---
 
