@@ -1,0 +1,55 @@
+{
+  "speaker_id": "lak",
+  "timestamp": "2026-03-30T00:22:47.624840",
+  "baseline": {
+    "speaker_id": "lak",
+    "timestamp": "2026-03-30T00:20:44.303493",
+    "transcript": "okay so i get out of my house my house is north facing so i take a left that's the west then i walk straight for five minutes and using the algorithm society i get out uh then i take a ride again that's not again and then i walk straight for five more minutes take another ride that's an east and then walk for another 10 minutes straight then i left then a landmark that you arrive at uh i arrived it's a police station to take a ride from there and then when you go straight for like 10 minutes you arrive at vmc this is like a center there vmc good round that's what they call it uh and then you go you keep walking you keep walking uh on the road you go right now right you take the same direction you go straight for like i guess 15 more minutes and then you arrive at a road called hamilton road uh there's a red light there right you wait for to turn green then take a left from there uh you go on straight on your left there will be parking in like a sandy muddy area and on your right there will be Galleria so you just you just take a right and then you enter it and then voila you're at Galleria that's the route I take every single day and that's the route I take back home",
+    "agent_baselines": {
+      "pause_patterns": {
+        "raw_score": 0.342,
+        "score": 0.342
+      },
+      "filler_words": {
+        "raw_score": 0.888,
+        "score": 0.888
+      },
+      "speech_rate": {
+        "raw_score": 0.526,
+        "score": 0.526
+      }
+    }
+  },
+  "test": {
+    "transcript": "I would say it's sketching, though it's not something I really actively participate in anymore. I really do like it. When I was 14-15, more inclined towards my younger childhood days, I really liked sketching. I used to sketch some fiction characters that I really liked. I used to sketch a lot of Benton Indians, if you're aware of what that is. My father was a really good sketcher too. I don't know if that's a term, but yeah, his sketches were awesome. He didn't draw anything too fancy. It was mostly just cars, bikes that he liked, bungalows, villas, whatever, right, his dream house or whatever. He used to sketch them. They were really nice. The reason I feel like I enjoy sketching, other than besides that I guess I was naturally good at it because of my dad, is because I feel like it's really beautiful that you can really just name it down something that you find attractive or you, I guess, find pleasing. If I find a cartoon really entertaining, really inspiring, I can just sketch that down in my own style, even though that wouldn't be sketching, I guess, because if I'm just adding up my own tone, my own style, but yeah, that's mostly it.",
+    "agent_scores": {
+      "pause_patterns": {
+        "raw_score": 0.489,
+        "z_score": 0.49
+      },
+      "filler_words": {
+        "raw_score": 0.352,
+        "z_score": -1.7867
+      },
+      "speech_rate": {
+        "raw_score": 0.518,
+        "z_score": -0.04
+      }
+    }
+  },
+  "deviations": {
+    "pause_patterns": {
+      "raw_delta": 0.14699999999999996,
+      "z_score": 0.49
+    },
+    "filler_words": {
+      "raw_delta": -0.536,
+      "z_score": -1.7867
+    },
+    "speech_rate": {
+      "raw_delta": -0.008000000000000007,
+      "z_score": -0.04
+    }
+  },
+  "input_file": "Data\\speaker_03\\q10_low.mp4"
+}

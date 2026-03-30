@@ -1,0 +1,19 @@
+{
+  "speaker_id": "lak",
+  "timestamp": "2026-03-30T00:20:44.303493",
+  "transcript": "okay so i get out of my house my house is north facing so i take a left that's the west then i walk straight for five minutes and using the algorithm society i get out uh then i take a ride again that's not again and then i walk straight for five more minutes take another ride that's an east and then walk for another 10 minutes straight then i left then a landmark that you arrive at uh i arrived it's a police station to take a ride from there and then when you go straight for like 10 minutes you arrive at vmc this is like a center there vmc good round that's what they call it uh and then you go you keep walking you keep walking uh on the road you go right now right you take the same direction you go straight for like i guess 15 more minutes and then you arrive at a road called hamilton road uh there's a red light there right you wait for to turn green then take a left from there uh you go on straight on your left there will be parking in like a sandy muddy area and on your right there will be Galleria so you just you just take a right and then you enter it and then voila you're at Galleria that's the route I take every single day and that's the route I take back home",
+  "agent_baselines": {
+    "pause_patterns": {
+      "raw_score": 0.342,
+      "score": 0.342
+    },
+    "filler_words": {
+      "raw_score": 0.888,
+      "score": 0.888
+    },
+    "speech_rate": {
+      "raw_score": 0.526,
+      "score": 0.526
+    }
+  }
+}

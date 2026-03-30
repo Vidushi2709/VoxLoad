@@ -1,0 +1,19 @@
+{
+  "speaker_id": "vin",
+  "timestamp": "2026-03-30T10:50:22.111818",
+  "transcript": "My bedroom has a table, study table, a TV, some lights, a bed, some almirahs for the clothes and it has a window. We also have a piano in our room and I have green, blue, grey curtains, some pictures, a fan and a lot of miniature toys and some stuffed toys as well. and i also have a lot of books in my room and my almira has a lot of stickers on it as well currently my bed has a blue bed sheet and a very cute little chair to sit on it is pink in color",
+  "agent_baselines": {
+    "pause_patterns": {
+      "raw_score": 0.669,
+      "score": 0.669
+    },
+    "filler_words": {
+      "raw_score": 0.224,
+      "score": 0.224
+    },
+    "speech_rate": {
+      "raw_score": 0.531,
+      "score": 0.531
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "speaker_id": "ayu",
+  "timestamp": "2026-03-30T00:08:29.468991",
+  "baseline": {
+    "speaker_id": "ayu",
+    "timestamp": "2026-03-30T00:04:02.264090",
+    "transcript": "so my room doesn't have a lot of things but the things that are actually worth mentioning includes a bed on which i sleep or relax then i could see a pillow which helps me sleep faster then there is a table on which i spend most of my hours in a day on the table there are two laptops one is quite old which i use for some minimal tasks like surfing web or running a live server the other one is the main laptop which i usually use for my day-to-day task then i could see a few registers on my table alongside a few stationery which includes pen and pencil and i could see two mouses on my table and a rubik's cube also one earphones which i hardly use. Then I could see a beanbag on my in my room on which I put my clothes then there is a AC and there's an Elmira in which I put my clothes yeah nothing much is there in my room",
+    "agent_baselines": {
+      "pause_patterns": {
+        "raw_score": 0.578,
+        "score": 0.578
+      },
+      "filler_words": {
+        "raw_score": 0.195,
+        "score": 0.195
+      },
+      "speech_rate": {
+        "raw_score": 0.388,
+        "score": 0.388
+      }
+    }
+  },
+  "test": {
+    "transcript": "So for dividing 17 by 3, I'll start looking for a factor of 3, which is less than 17, but also nearest to 17. So I'll get 5 times 3, which is 15. So I'll subtract 15 from 17, where I'll get 2 as the remainder and 5 as the quotient. Then I still have the remainder. So I'll go further on by adding a decimal point and a 0 in the remainder. so now I look for a factor of 3 which is nearest to 20 but also less than 20 so I get 18 which is 3 times 6 now I'll put 6 in the quotient and subtract 18 from 20 from there I'll get 2 so the quotient is 5.6 and the remainder is still 2 which which makes me think that the quotient is going to be repetitive, so I'll just take the answer as 5.666 as my final answer after dividing 17 by 3.",
+    "agent_scores": {
+      "pause_patterns": {
+        "raw_score": 0.427,
+        "z_score": -0.5033
+      },
+      "filler_words": {
+        "raw_score": 0.505,
+        "z_score": 1.0333
+      },
+      "speech_rate": {
+        "raw_score": 0.39,
+        "z_score": 0.01
+      }
+    }
+  },
+  "deviations": {
+    "pause_patterns": {
+      "raw_delta": -0.15099999999999997,
+      "z_score": -0.5033
+    },
+    "filler_words": {
+      "raw_delta": 0.31,
+      "z_score": 1.0333
+    },
+    "speech_rate": {
+      "raw_delta": 0.0020000000000000018,
+      "z_score": 0.01
+    }
+  },
+  "input_file": "Data\\speaker_02\\q05_high.mp4"
+}

@@ -1,0 +1,55 @@
+{
+  "speaker_id": "vin",
+  "timestamp": "2026-03-30T10:55:22.806734",
+  "baseline": {
+    "speaker_id": "vin",
+    "timestamp": "2026-03-30T10:50:22.111818",
+    "transcript": "My bedroom has a table, study table, a TV, some lights, a bed, some almirahs for the clothes and it has a window. We also have a piano in our room and I have green, blue, grey curtains, some pictures, a fan and a lot of miniature toys and some stuffed toys as well. and i also have a lot of books in my room and my almira has a lot of stickers on it as well currently my bed has a blue bed sheet and a very cute little chair to sit on it is pink in color",
+    "agent_baselines": {
+      "pause_patterns": {
+        "raw_score": 0.669,
+        "score": 0.669
+      },
+      "filler_words": {
+        "raw_score": 0.224,
+        "score": 0.224
+      },
+      "speech_rate": {
+        "raw_score": 0.531,
+        "score": 0.531
+      }
+    }
+  },
+  "test": {
+    "transcript": "to get to get to the nearest grocery store um i would first get out from my house then i would walk straight and take a left turn and then walk straight again then another right turn and then walk straight again and then i would be at the nearest grocery store",
+    "agent_scores": {
+      "pause_patterns": {
+        "raw_score": 0.58,
+        "z_score": -0.2967
+      },
+      "filler_words": {
+        "raw_score": 0.566,
+        "z_score": 1.14
+      },
+      "speech_rate": {
+        "raw_score": 0.387,
+        "z_score": -0.72
+      }
+    }
+  },
+  "deviations": {
+    "pause_patterns": {
+      "raw_delta": -0.08900000000000008,
+      "z_score": -0.2967
+    },
+    "filler_words": {
+      "raw_delta": 0.34199999999999997,
+      "z_score": 1.14
+    },
+    "speech_rate": {
+      "raw_delta": -0.14400000000000002,
+      "z_score": -0.72
+    }
+  },
+  "input_file": "Data\\speaker_01\\q03_medium.mp4"
+}

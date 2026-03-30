@@ -1,0 +1,55 @@
+{
+  "speaker_id": "lak",
+  "timestamp": "2026-03-30T00:24:32.553193",
+  "baseline": {
+    "speaker_id": "lak",
+    "timestamp": "2026-03-30T00:20:44.303493",
+    "transcript": "okay so i get out of my house my house is north facing so i take a left that's the west then i walk straight for five minutes and using the algorithm society i get out uh then i take a ride again that's not again and then i walk straight for five more minutes take another ride that's an east and then walk for another 10 minutes straight then i left then a landmark that you arrive at uh i arrived it's a police station to take a ride from there and then when you go straight for like 10 minutes you arrive at vmc this is like a center there vmc good round that's what they call it uh and then you go you keep walking you keep walking uh on the road you go right now right you take the same direction you go straight for like i guess 15 more minutes and then you arrive at a road called hamilton road uh there's a red light there right you wait for to turn green then take a left from there uh you go on straight on your left there will be parking in like a sandy muddy area and on your right there will be Galleria so you just you just take a right and then you enter it and then voila you're at Galleria that's the route I take every single day and that's the route I take back home",
+    "agent_baselines": {
+      "pause_patterns": {
+        "raw_score": 0.342,
+        "score": 0.342
+      },
+      "filler_words": {
+        "raw_score": 0.888,
+        "score": 0.888
+      },
+      "speech_rate": {
+        "raw_score": 0.526,
+        "score": 0.526
+      }
+    }
+  },
+  "test": {
+    "transcript": "This is probably the place called Gangtok in Sikkim and there's something extraordinary there but I guess the reason I would like to visit again is it's one of those places where even as a child it's just burned there in my mind right there's an engraving of it and it's really nice it was it was a really tiny place really neat place the people were really nice too uh really pleasant weather too I guess it's it lies in like the northern eastern hemisphere right so it used to rain there like a lot I guess every single day around five or six p.m to drink heavily and the weather would be so pleasant the smell of like i guess moistened up sand mud is nice like this there's also a road there which leads to Darjeeling and the view there is like immaculate you see all the tea gardens and stuff the smell of those pig plants if that's the right term was also it was immaculate it was really nice uh definitely something i i guess i won't forget The place is really clean too. When I first went there, it was like me visiting some sort of first world country, like that's how I imagined a first world country to be like, really clean, no littering on roadsides, no littering on dividers, no littering on the road, really polite people. That's, I guess, essentially it.",
+    "agent_scores": {
+      "pause_patterns": {
+        "raw_score": 0.515,
+        "z_score": 0.5767
+      },
+      "filler_words": {
+        "raw_score": 0.79,
+        "z_score": -0.3267
+      },
+      "speech_rate": {
+        "raw_score": 0.586,
+        "z_score": 0.3
+      }
+    }
+  },
+  "deviations": {
+    "pause_patterns": {
+      "raw_delta": 0.173,
+      "z_score": 0.5767
+    },
+    "filler_words": {
+      "raw_delta": -0.09799999999999998,
+      "z_score": -0.3267
+    },
+    "speech_rate": {
+      "raw_delta": 0.05999999999999994,
+      "z_score": 0.3
+    }
+  },
+  "input_file": "Data\\speaker_03\\q11_low.mp4"
+}

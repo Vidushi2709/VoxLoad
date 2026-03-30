@@ -1,0 +1,55 @@
+{
+  "speaker_id": "lak",
+  "timestamp": "2026-03-30T00:34:26.284415",
+  "baseline": {
+    "speaker_id": "lak",
+    "timestamp": "2026-03-30T00:20:44.303493",
+    "transcript": "okay so i get out of my house my house is north facing so i take a left that's the west then i walk straight for five minutes and using the algorithm society i get out uh then i take a ride again that's not again and then i walk straight for five more minutes take another ride that's an east and then walk for another 10 minutes straight then i left then a landmark that you arrive at uh i arrived it's a police station to take a ride from there and then when you go straight for like 10 minutes you arrive at vmc this is like a center there vmc good round that's what they call it uh and then you go you keep walking you keep walking uh on the road you go right now right you take the same direction you go straight for like i guess 15 more minutes and then you arrive at a road called hamilton road uh there's a red light there right you wait for to turn green then take a left from there uh you go on straight on your left there will be parking in like a sandy muddy area and on your right there will be Galleria so you just you just take a right and then you enter it and then voila you're at Galleria that's the route I take every single day and that's the route I take back home",
+    "agent_baselines": {
+      "pause_patterns": {
+        "raw_score": 0.342,
+        "score": 0.342
+      },
+      "filler_words": {
+        "raw_score": 0.888,
+        "score": 0.888
+      },
+      "speech_rate": {
+        "raw_score": 0.526,
+        "score": 0.526
+      }
+    }
+  },
+  "test": {
+    "transcript": "Okay, well, I suppose the code isn't too big for manual scanning, right? For me, if I can read through the code in a reasonable time, I guess I'd just manually scroll and see if I can find something that looks off. Of course, if the code is way too big and I deduce that finding the bug would just be way too tedious for me to manually scroll up and down, look for every line of the code and see what's wrong. Then I'd probably look up something in the documentation of the language that I'm using of maybe the IDE that I'm using of whatever extension that I've installed that is if I'm using the IDE of my choice I'd probably ask help from a friend I'd probably send over my code, my file to some people that I guess I look up to at least in the tech department i'll see if they can help me out with the stuff the problem uh see if they can you know uh tell me what what i'm doing wrong and hopefully hopefully get the book fixed to that and if they don't uh if they'll do i guess i just resort to using ai i suppose i i probably use chagi putti gemini whatever whatever comes in handy whatever uh can pinpoint the error faster and actually explaining what i'm doing wrong in in a sense of the fashion and like whatever just just helps me debug my bug in a less jargon way. Actually makes me understand what I'm doing wrong, rather than some tech jargon that just goes over my head and then I have to just face my face with the bug. Yeah, I probably go with the chatbot that actually helps me see what I'm doing wrong.",
+    "agent_scores": {
+      "pause_patterns": {
+        "raw_score": 0.564,
+        "z_score": 0.74
+      },
+      "filler_words": {
+        "raw_score": 0.5,
+        "z_score": -1.2933
+      },
+      "speech_rate": {
+        "raw_score": 0.473,
+        "z_score": -0.265
+      }
+    }
+  },
+  "deviations": {
+    "pause_patterns": {
+      "raw_delta": 0.22199999999999992,
+      "z_score": 0.74
+    },
+    "filler_words": {
+      "raw_delta": -0.388,
+      "z_score": -1.2933
+    },
+    "speech_rate": {
+      "raw_delta": -0.05300000000000005,
+      "z_score": -0.265
+    }
+  },
+  "input_file": "Data\\speaker_03\\q06_high.mp4"
+}

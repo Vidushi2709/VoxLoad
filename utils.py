@@ -28,7 +28,7 @@ from openai import AsyncOpenAI
 from Agents.pause_patterns_agent import PausePatternsAgent
 from Agents.filler_words_agent import FillerPatternsAgent
 from Agents.speech_rate_agent import SpeechRateAgent
-from Agents.semantic_density_agent import SemanticDensityAgent
+# from Agents.semantic_density_agent import SemanticDensityAgent  # COMMENTED OUT
 
 load_dotenv()
 
@@ -211,7 +211,7 @@ async def run_agents(
     pause_agent    = PausePatternsAgent()
     filler_agent   = FillerPatternsAgent()
     speech_agent   = SpeechRateAgent()
-    semantic_agent = SemanticDensityAgent(model=model)
+    # semantic_agent = SemanticDensityAgent(model=model)  # COMMENTED OUT
 
     tag = f" [{label}]" if label else ""
     print(f"  [agents]{tag} running …")
@@ -233,11 +233,11 @@ async def run_agents(
     print(f"    {'agent':<22} elapsed")
     print(f"    {'-'*30}")
     try:
-        pause_r, filler_r, speech_r, semantic_r = await asyncio.gather(
+        pause_r, filler_r, speech_r = await asyncio.gather(
             asyncio.to_thread(_timed, "pause_patterns",    pause_agent.compute,  words, speaker_id, baselines),
             asyncio.to_thread(_timed, "filler_words",      filler_agent.compute, text, True, speaker_id, baselines),
             asyncio.to_thread(_timed, "speech_rate",       speech_agent.run,     words, wav_path, speaker_id, baselines),
-            _timed_async("semantic_density", semantic_agent.compute(text, client, None, speaker_id, baselines, baseline_transcript)),
+            # _timed_async("semantic_density", semantic_agent.compute(text, client, None, speaker_id, baselines, baseline_transcript)),  # COMMENTED OUT
         )
     except Exception as e:
         print(f"  ERROR in agents: {e}")
@@ -250,14 +250,14 @@ async def run_agents(
         "pause_patterns":   pause_r,
         "filler_words":     filler_r,
         "speech_rate":      speech_r,
-        "semantic_density": semantic_r,
+        # "semantic_density": semantic_r,  # COMMENTED OUT
     }
 
     print(f"")
     print(f"    pause_patterns   : raw={pause_r.get('raw_score', pause_r['score']):.3f}  z={pause_r['score']:.3f}  (pauses={pause_r['pause_count']})")
     print(f"    filler_words     : raw={filler_r.get('raw_score', filler_r['score']):.3f}  z={filler_r['score']:.3f}  (count={filler_r['total_fillers']})")
     print(f"    speech_rate      : raw={speech_r.get('raw_score', speech_r['score']):.3f}  z={speech_r['score']:.3f}  (wpm={speech_r.get('wpm', 0):.0f})")
-    print(f"    semantic_density : raw={semantic_r.get('raw_score', semantic_r['score']):.3f}  z={semantic_r['score']:.3f}  ({semantic_r.get('reasoning', '')[:40]})")
+    # print(f"    semantic_density : raw={semantic_r.get('raw_score', semantic_r['score']):.3f}  z={semantic_r['score']:.3f}  ({semantic_r.get('reasoning', '')[:40]})")  # COMMENTED OUT
 
     return {
         "agent_scores":    agent_scores,

@@ -121,6 +121,8 @@ Compared to their baseline, rate how much MORE effort the speaker is expending i
 Rules:
 - Do NOT penalize grammar errors or code-switching alone
 - Judge PRODUCTION effort relative to their baseline
+- Do NOT penalize for topic differences — only compare fluency 
+  and production effort markers, not content
 - Be objective: use specific evidence from both transcripts
 - Be willing to give extreme scores (0.1 or 0.9) when differences are clear
 

@@ -1,0 +1,55 @@
+{
+  "speaker_id": "vin",
+  "timestamp": "2026-03-30T10:57:36.788239",
+  "baseline": {
+    "speaker_id": "vin",
+    "timestamp": "2026-03-30T10:50:22.111818",
+    "transcript": "My bedroom has a table, study table, a TV, some lights, a bed, some almirahs for the clothes and it has a window. We also have a piano in our room and I have green, blue, grey curtains, some pictures, a fan and a lot of miniature toys and some stuffed toys as well. and i also have a lot of books in my room and my almira has a lot of stickers on it as well currently my bed has a blue bed sheet and a very cute little chair to sit on it is pink in color",
+    "agent_baselines": {
+      "pause_patterns": {
+        "raw_score": 0.669,
+        "score": 0.669
+      },
+      "filler_words": {
+        "raw_score": 0.224,
+        "score": 0.224
+      },
+      "speech_rate": {
+        "raw_score": 0.531,
+        "score": 0.531
+      }
+    }
+  },
+  "test": {
+    "transcript": "Okay, so machine learning is like teaching our laptop or like our model on how to recognize patterns. We train our model to recognize patterns in a data set. So we are able to do some particular task like predicting the stocks, predicting if the stocks will rise or fall or we can also use machine learning to classify objects yes",
+    "agent_scores": {
+      "pause_patterns": {
+        "raw_score": 0.541,
+        "z_score": -0.4267
+      },
+      "filler_words": {
+        "raw_score": 0.864,
+        "z_score": 2.1333
+      },
+      "speech_rate": {
+        "raw_score": 0.475,
+        "z_score": -0.28
+      }
+    }
+  },
+  "deviations": {
+    "pause_patterns": {
+      "raw_delta": -0.128,
+      "z_score": -0.4267
+    },
+    "filler_words": {
+      "raw_delta": 0.64,
+      "z_score": 2.1333
+    },
+    "speech_rate": {
+      "raw_delta": -0.05600000000000005,
+      "z_score": -0.28
+    }
+  },
+  "input_file": "Data\\speaker_01\\q04_medium.mp4"
+}

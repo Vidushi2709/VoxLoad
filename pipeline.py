@@ -11,6 +11,7 @@ python pipeline_test.py -i test.mp4 -s spkr_01 -m google/gemini-flash-1.5
 
 import argparse
 import asyncio
+import json
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -28,6 +29,45 @@ from utils import (
 )
 
 load_dotenv()
+
+
+def save_test_result(comparison: dict, input_path: Path, speaker_id: str, output_dir: Path = OUTPUT_DIR) -> Path:
+    """
+    Save test comparison results to output/test_results/
+    
+    Parameters
+    ----------
+    comparison : dict
+        Comparison result from test_mode
+    input_path : Path
+        Path to the test audio file
+    speaker_id : str
+        Speaker identifier
+    output_dir : Path
+        Base output directory
+    
+    Returns
+    -------
+    Path to saved result file
+    """
+    results_dir = output_dir / "test_results"
+    results_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Extract question_id from input filename (e.g., q02_low -> q02_low)
+    question_id = input_path.stem
+    
+    # Create filename with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    result_file = results_dir / f"{speaker_id}_{question_id}_{timestamp}.json"
+    
+    # Add metadata
+    result_data = comparison.copy()
+    result_data["input_file"] = str(input_path)
+    
+    result_file.write_text(json.dumps(result_data, indent=2), encoding="utf-8")
+    print(f"\n[Save Results]")
+    print(f"  [OK] Test results saved -> {result_file}")
+    return result_file
 
 
 async def test_mode(input_path: Path, speaker_id: str, model: str = None) -> dict:
@@ -195,7 +235,10 @@ Note:
         print(f"ERROR: File not found: {input_path}", file=sys.stderr)
         sys.exit(1)
 
-    asyncio.run(test_mode(input_path, args.speaker, args.model))
+    comparison = asyncio.run(test_mode(input_path, args.speaker, args.model))
+    
+    # Save results
+    save_test_result(comparison, input_path, args.speaker)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,55 @@
+{
+  "speaker_id": "lak",
+  "timestamp": "2026-03-30T00:27:40.143216",
+  "baseline": {
+    "speaker_id": "lak",
+    "timestamp": "2026-03-30T00:20:44.303493",
+    "transcript": "okay so i get out of my house my house is north facing so i take a left that's the west then i walk straight for five minutes and using the algorithm society i get out uh then i take a ride again that's not again and then i walk straight for five more minutes take another ride that's an east and then walk for another 10 minutes straight then i left then a landmark that you arrive at uh i arrived it's a police station to take a ride from there and then when you go straight for like 10 minutes you arrive at vmc this is like a center there vmc good round that's what they call it uh and then you go you keep walking you keep walking uh on the road you go right now right you take the same direction you go straight for like i guess 15 more minutes and then you arrive at a road called hamilton road uh there's a red light there right you wait for to turn green then take a left from there uh you go on straight on your left there will be parking in like a sandy muddy area and on your right there will be Galleria so you just you just take a right and then you enter it and then voila you're at Galleria that's the route I take every single day and that's the route I take back home",
+    "agent_baselines": {
+      "pause_patterns": {
+        "raw_score": 0.342,
+        "score": 0.342
+      },
+      "filler_words": {
+        "raw_score": 0.888,
+        "score": 0.888
+      },
+      "speech_rate": {
+        "raw_score": 0.526,
+        "score": 0.526
+      }
+    }
+  },
+  "test": {
+    "transcript": "the city I've never been before, how would I plan a trip there? I guess if it's a long trip, I would essentially see if I can integrate my daily lifestyle whilst I'm visiting there. If I'm really into working out, I'd probably seek out a stable hotel or a rental place with a stable wi-fi connection where I can just keep up with my work. Without any technical difficulties, I would I would preferably pick a place close to the main city, I guess the mall road you'd call it where I can just, I don't have to walk a lot, I can just go to the nearby points of interest maybe some tourist spot, maybe some, I don't know, maybe a shop, maybe a restaurant like whatever zone that doesn't involve me walking maybe a kilometre or two to get to a point of interest I would see if the city I'm visiting has houses anyone I know, maybe from family, maybe some old friends, maybe any present friends, see if I can meet up with them, link up with them, have a little chat and I guess that's essentially it.",
+    "agent_scores": {
+      "pause_patterns": {
+        "raw_score": 0.556,
+        "z_score": 0.7133
+      },
+      "filler_words": {
+        "raw_score": 0.061,
+        "z_score": -2.7567
+      },
+      "speech_rate": {
+        "raw_score": 0.636,
+        "z_score": 0.55
+      }
+    }
+  },
+  "deviations": {
+    "pause_patterns": {
+      "raw_delta": 0.21400000000000002,
+      "z_score": 0.7133
+    },
+    "filler_words": {
+      "raw_delta": -0.827,
+      "z_score": -2.7567
+    },
+    "speech_rate": {
+      "raw_delta": 0.10999999999999999,
+      "z_score": 0.55
+    }
+  },
+  "input_file": "Data\\speaker_03\\q16_medium.mp4"
+}

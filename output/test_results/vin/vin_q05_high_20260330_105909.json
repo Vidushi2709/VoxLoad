@@ -1,0 +1,55 @@
+{
+  "speaker_id": "vin",
+  "timestamp": "2026-03-30T10:59:09.740772",
+  "baseline": {
+    "speaker_id": "vin",
+    "timestamp": "2026-03-30T10:50:22.111818",
+    "transcript": "My bedroom has a table, study table, a TV, some lights, a bed, some almirahs for the clothes and it has a window. We also have a piano in our room and I have green, blue, grey curtains, some pictures, a fan and a lot of miniature toys and some stuffed toys as well. and i also have a lot of books in my room and my almira has a lot of stickers on it as well currently my bed has a blue bed sheet and a very cute little chair to sit on it is pink in color",
+    "agent_baselines": {
+      "pause_patterns": {
+        "raw_score": 0.669,
+        "score": 0.669
+      },
+      "filler_words": {
+        "raw_score": 0.224,
+        "score": 0.224
+      },
+      "speech_rate": {
+        "raw_score": 0.531,
+        "score": 0.531
+      }
+    }
+  },
+  "test": {
+    "transcript": "17 divided by 3 first um is 4 so 12 16 minus 12 is 4 4 then 3 1 the remainder says 1 we get 41 in the question and then we take a 0 for that 0 um then a 9 so 3 so my question will be um 41.9",
+    "agent_scores": {
+      "pause_patterns": {
+        "raw_score": 0.705,
+        "z_score": 0.12
+      },
+      "filler_words": {
+        "raw_score": 0.99,
+        "z_score": 2.5533
+      },
+      "speech_rate": {
+        "raw_score": 0.522,
+        "z_score": -0.045
+      }
+    }
+  },
+  "deviations": {
+    "pause_patterns": {
+      "raw_delta": 0.03599999999999992,
+      "z_score": 0.12
+    },
+    "filler_words": {
+      "raw_delta": 0.766,
+      "z_score": 2.5533
+    },
+    "speech_rate": {
+      "raw_delta": -0.009000000000000008,
+      "z_score": -0.045
+    }
+  },
+  "input_file": "Data\\speaker_01\\q05_high.mp4"
+}
