@@ -62,15 +62,15 @@ Aggregator weights (active agents): `pause_patterns 41% · speech_rate 35% · fi
 
 ```bash
 # 1. Clone & enter
-git clone <repo-url>
-cd speech-cognitive-load
+git clone https://github.com/Vidushi2709/VoxLoad
+cd VoxLoad
 
 # 2. Install dependencies (uv recommended)
 uv sync
 # or: pip install -r requirements.txt
 
-# 3. Set your OpenRouter API key
-echo "OPENROUTER_API_KEY=sk-or-..." > .env
+# 3. Set your LLM API key
+echo "API_KEY=sk-or-..." > .env
 ```
 
 ---
