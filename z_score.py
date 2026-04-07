@@ -13,6 +13,7 @@ FEATURE_EXPECTED_RANGE = {
     "pause_patterns":   0.3,
     "speech_rate":      0.2,
     "semantic_density": 0.3,
+    "coherence":        0.25,  # composite of relevance+completeness+coherence dims
 }
 
 

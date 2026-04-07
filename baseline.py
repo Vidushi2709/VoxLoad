@@ -30,7 +30,7 @@ from utils import (
 load_dotenv()
 
 
-async def baseline_mode(input_path: Path, speaker_id: str, model: str = None) -> dict:
+async def baseline_mode(input_path: Path, speaker_id: str, model: str = None, question: str = None) -> dict:
     """
     Establish baseline: transcribe audio, run agents, save baseline.
     
@@ -42,6 +42,8 @@ async def baseline_mode(input_path: Path, speaker_id: str, model: str = None) ->
         Speaker identifier
     model : str, optional
         OpenRouter model override
+    question : str, optional
+        Question text to enable coherence scoring
     
     Returns
     -------
@@ -85,6 +87,7 @@ async def baseline_mode(input_path: Path, speaker_id: str, model: str = None) ->
         speaker_id=speaker_id,
         baselines={},  # Empty baselines = raw scores only
         wav_path=str(wav_path),
+        question=question,  # Optional question for coherence scoring
     )
 
     agent_scores = result["agent_scores"]
@@ -129,6 +132,9 @@ Examples:
 
   # With custom LLM model
   python pipeline_baseline.py -i baseline.mp4 -s spkr_01 -m google/gemini-flash-1.5
+
+  # With coherence scoring
+  python pipeline_baseline.py -i baseline.mp4 -s spkr_01 -q "Describe what you see"
         """,
     )
     
@@ -154,6 +160,13 @@ Examples:
         help="OpenRouter model ID (e.g., google/gemini-flash-1.5). "
              "Overrides OPENROUTER_MODEL env var.",
     )
+    parser.add_argument(
+        "--question", "-q",
+        type=str,
+        default=None,
+        metavar="QUESTION",
+        help="Question text to enable coherence scoring (optional)",
+    )
 
     args = parser.parse_args()
 
@@ -162,7 +175,7 @@ Examples:
         print(f"ERROR: File not found: {input_path}", file=sys.stderr)
         sys.exit(1)
 
-    asyncio.run(baseline_mode(input_path, args.speaker, args.model))
+    asyncio.run(baseline_mode(input_path, args.speaker, args.model, args.question))
 
 
 if __name__ == "__main__":

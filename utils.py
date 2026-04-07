@@ -28,6 +28,7 @@ from openai import AsyncOpenAI
 from Agents.pause_patterns_agent import PausePatternsAgent
 from Agents.filler_words_agent import FillerPatternsAgent
 from Agents.speech_rate_agent import SpeechRateAgent
+from Agents.coherence_agent import CoherenceAgent
 # from Agents.semantic_density_agent import SemanticDensityAgent  # COMMENTED OUT
 
 load_dotenv()
@@ -189,6 +190,7 @@ async def run_agents(
     baselines: dict  = None,
     wav_path: str    = None,
     baseline_transcript: str = None,
+    question: str    = None,
 ) -> dict:
     """
     Run all agents in parallel and return raw scores.
@@ -203,6 +205,7 @@ async def run_agents(
     baselines : pre-loaded baselines dict
     wav_path : path to audio file (for speech_rate agent)
     baseline_transcript : baseline transcript for semantic_density comparison
+    question : optional question text for coherence agent
     
     Returns
     -------
@@ -211,6 +214,7 @@ async def run_agents(
     pause_agent    = PausePatternsAgent()
     filler_agent   = FillerPatternsAgent()
     speech_agent   = SpeechRateAgent()
+    coherence_agent = CoherenceAgent() if question else None
     # semantic_agent = SemanticDensityAgent(model=model)  # COMMENTED OUT
 
     tag = f" [{label}]" if label else ""
@@ -232,13 +236,29 @@ async def run_agents(
 
     print(f"    {'agent':<22} elapsed")
     print(f"    {'-'*30}")
+    
+    # Initialize coherence_r to None (may be set from results or remain None if disabled)
+    coherence_r = None
+    
     try:
-        pause_r, filler_r, speech_r = await asyncio.gather(
+        gather_tasks = [
             asyncio.to_thread(_timed, "pause_patterns",    pause_agent.compute,  words, speaker_id, baselines),
             asyncio.to_thread(_timed, "filler_words",      filler_agent.compute, text, True, speaker_id, baselines),
             asyncio.to_thread(_timed, "speech_rate",       speech_agent.run,     words, wav_path, speaker_id, baselines),
             # _timed_async("semantic_density", semantic_agent.compute(text, client, None, speaker_id, baselines, baseline_transcript)),  # COMMENTED OUT
-        )
+        ]
+        
+        if coherence_agent:
+            gather_tasks.append(
+                _timed_async("coherence", coherence_agent.compute(text, client, question, speaker_id, baselines))
+            )
+        
+        results = await asyncio.gather(*gather_tasks)
+        
+        if coherence_agent:
+            pause_r, filler_r, speech_r, coherence_r = results
+        else:
+            pause_r, filler_r, speech_r = results
     except Exception as e:
         print(f"  ERROR in agents: {e}")
         raise
@@ -252,11 +272,18 @@ async def run_agents(
         "speech_rate":      speech_r,
         # "semantic_density": semantic_r,  # COMMENTED OUT
     }
+    
+    if coherence_agent and coherence_r is not None:
+        agent_scores["coherence"] = coherence_r
 
     print(f"")
     print(f"    pause_patterns   : raw={pause_r.get('raw_score', pause_r['score']):.3f}  z={pause_r['score']:.3f}  (pauses={pause_r['pause_count']})")
     print(f"    filler_words     : raw={filler_r.get('raw_score', filler_r['score']):.3f}  z={filler_r['score']:.3f}  (count={filler_r['total_fillers']})")
     print(f"    speech_rate      : raw={speech_r.get('raw_score', speech_r['score']):.3f}  z={speech_r['score']:.3f}  (wpm={speech_r.get('wpm', 0):.0f})")
+    if coherence_agent and coherence_r is not None:
+        print(f"    coherence        : raw={coherence_r.get('raw_score', coherence_r['score']):.3f}  z={coherence_r['score']:.3f}  (rel={coherence_r.get('relevance')}, comp={coherence_r.get('completeness')}, coh={coherence_r.get('coherence')})")
+    elif coherence_agent and coherence_r is None:
+        print(f"    coherence        : FAILED (LLM parsing error)")
     # print(f"    semantic_density : raw={semantic_r.get('raw_score', semantic_r['score']):.3f}  z={semantic_r['score']:.3f}  ({semantic_r.get('reasoning', '')[:40]})")  # COMMENTED OUT
 
     return {
