@@ -47,7 +47,7 @@ from z_score import compute_z_score
 dotenv.load_dotenv()
 
 OPENROUTER_BASE_URL  = "https://openrouter.ai/api/v1"
-DEFAULT_MODEL        = "mistralai/mistral-small-3.2-24b-instruct"
+DEFAULT_MODEL        = "mistralai/mistral-small-3.1-24b-instruct"
 MAX_TRANSCRIPT_CHARS = 4000   # ~800 words — enough context without blowing tokens
 
 # Raw dimension scale
@@ -66,13 +66,30 @@ def _strip_markdown(text: str) -> str:
 def _extract_json(raw: str) -> dict:
     """Try to parse JSON; also attempts to extract the first {...} block."""
     raw = _strip_markdown(raw)
+    
+    # First attempt: direct JSON parse
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
-        match = re.search(r"\{[^{}]*\}", raw, re.DOTALL)
-        if match:
+        pass
+    
+    # Second attempt: find {...} block
+    match = re.search(r"\{[^{}]*\}", raw, re.DOTALL)
+    if match:
+        try:
             return json.loads(match.group())
-        raise
+        except json.JSONDecodeError:
+            pass
+    
+    # Third attempt: more complex nested structures
+    match = re.search(r"\{.*\}", raw, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group())
+        except json.JSONDecodeError:
+            pass
+    
+    raise json.JSONDecodeError(f"Could not extract valid JSON from: {raw[:200]}", raw, 0)
 
 
 def _normalise_dim(value: Optional[float]) -> Optional[float]:
@@ -154,10 +171,14 @@ Rules:
 - DO penalize unclear/ambiguous speech that makes comprehension difficult
 - Be strict: lower scores when listener effort is needed to understand
 
-Return ONLY valid JSON, no explanation:
-{{"relevance": N, "completeness": N, "coherence": N, "confidence": 0.0}}
-
-confidence = your certainty given transcript length and clarity (short/garbled = low)
+OUTPUT FORMAT (CRITICAL - MUST BE VALID JSON ONLY):
+- Return ONLY a single JSON object, no markdown, no text before or after
+- Use exactly these 4 keys: "relevance", "completeness", "coherence", "confidence"
+- All values must be NUMBERS (not strings)
+- Dimensions: integers from 1 to 5
+- Confidence: decimal from 0.0 to 1.0
+- No null or None values—use 3 and 0.5 if unsure
+- Example: {{"relevance": 4, "completeness": 3, "coherence": 4, "confidence": 0.8}}
 
 Question: {question}
 Transcript: {transcript}"""
@@ -165,19 +186,26 @@ Transcript: {transcript}"""
     @staticmethod
     def _build_retry_prompt(question: str, transcript: str) -> str:
         """Stricter prompt used on the second attempt."""
-        return f"""Score this answer on 3 dimensions (1–5, integer only, no null):
-- relevance: does it answer the question?
-- completeness: is it thorough and detailed?
-- coherence: is it clear and logically organized?
+        return f"""TASK: Score a response on 3 dimensions. Be strict.
 
-PENALIZE for:
-- Repetitive phrases (sign of searching for words)
-- Unclear/ambiguous words (listener struggles to understand)
+Dimensions (1–5 scale):
+1. relevance - does it answer the question directly?
+2. completeness - is it thorough and detailed?
+3. coherence - is it clear, organized, easy to follow?
+
+PENALIZE cognitive load indicators:
+- Repetitive phrases (searching for words)
+- Unclear/ambiguous words (hard to understand)
 - Grammatical errors or vague references
-- List-like delivery instead of flowing narrative
+- List-like delivery (no flow or narrative)
 
-Output ONLY valid JSON:
-{{"relevance": N, "completeness": N, "coherence": N, "confidence": 0.5}}
+JSON OUTPUT FORMAT (REQUIRED):
+- Output ONLY a JSON object, nothing else
+- Keys: "relevance", "completeness", "coherence", "confidence"
+- All values are NUMBERS (not text)
+- Dimensions: 1, 2, 3, 4, or 5 (integers only)
+- Confidence: 0.0 to 1.0 (decimal)
+- EXAMPLE: {{"relevance": 3, "completeness": 4, "coherence": 3, "confidence": 0.7}}
 
 Question: {question[:200]}
 Transcript: {transcript[:500]}"""
@@ -250,15 +278,37 @@ Transcript: {transcript[:500]}"""
             print("  [coherence] ERROR: LLM response parsing failed after retry; skipping coherence scoring")
             return None
 
+        # Validate required fields and values
+        required_fields = {"relevance", "completeness", "coherence"}
+        missing_fields = required_fields - set(parsed.keys())
+        if missing_fields:
+            print(f"  [coherence] ERROR: Missing required fields: {missing_fields}")
+            print(f"    Parsed keys: {list(parsed.keys())}")
+            print(f"    Full parsed object: {parsed}")
+            return None
+
         # Extract dimension scores (may be null / None)
         def _safe(key: str) -> Optional[float]:
             v = parsed.get(key)
-            return None if v is None else float(v)
+            if v is None:
+                return None
+            try:
+                return float(v)
+            except (ValueError, TypeError) as e:
+                print(f"  [coherence] WARNING: Could not convert {key}={v!r} to float: {e}")
+                return 3.0 if key != "confidence" else 0.5
 
         rel_raw  = _safe("relevance")
         comp_raw = _safe("completeness")
         coh_raw  = _safe("coherence")
-        llm_conf = float(parsed.get("confidence", 0.5))
+        
+        # Extract confidence with error handling
+        try:
+            llm_conf = float(parsed.get("confidence", 0.5))
+        except (ValueError, TypeError):
+            print(f"  [coherence] WARNING: Could not parse confidence value, using default 0.5")
+            llm_conf = 0.5
+        
         llm_conf = max(0.0, min(1.0, llm_conf))
 
         # Normalise each dimension to [0, 1]
@@ -299,6 +349,7 @@ Transcript: {transcript[:500]}"""
 
     async def _call_llm(self, client: AsyncOpenAI, prompt: str, temperature: float = 0.0) -> Optional[dict]:
         """Call the LLM and attempt JSON extraction. Returns None on any failure."""
+        raw = None
         try:
             response = await client.chat.completions.create(
                 model       = self.model,
@@ -306,15 +357,36 @@ Transcript: {transcript[:500]}"""
                 messages    = [{"role": "user", "content": prompt}],
                 temperature = temperature,
             )
-            raw = response.choices[0].message.content.strip()
+            
+            # Validate response structure
+            if not response.choices or not response.choices[0]:
+                print(f"  [coherence] ERROR: Empty response from LLM")
+                return None
+            
+            message = response.choices[0].message
+            if not message or not message.content:
+                print(f"  [coherence] ERROR: LLM returned empty content")
+                return None
+            
+            raw = message.content.strip()
+            if not raw:
+                print(f"  [coherence] ERROR: LLM response is empty after stripping")
+                return None
+            
             parsed = _extract_json(raw)
             return parsed
+            
         except json.JSONDecodeError as exc:
             print(f"  [coherence] JSON parse error: {exc}")
-            print(f"    raw response: {raw[:200]}...")
+            if raw:
+                print(f"    raw response: {raw[:500]}")
             return None
         except Exception as exc:
             print(f"  [coherence] LLM call error: {type(exc).__name__}: {exc}")
+            import traceback
+            print(f"    full traceback: {traceback.format_exc()}")
+            if raw:
+                print(f"    raw response: {raw[:500]}")
             return None
 
     # Persistence

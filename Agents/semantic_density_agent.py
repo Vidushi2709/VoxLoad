@@ -32,8 +32,8 @@ from z_score import compute_z_score
 
 dotenv.load_dotenv()
 
-GROQ_BASE_URL = "https://api.groq.com/openai/v1"
-DEFAULT_MODEL   = "DeepSeek-R1-Distill-Llama-70B"        
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+DEFAULT_MODEL = "qwen/qwen3.6-plus:free"        
 MAX_TRANSCRIPT_CHARS = 4000   # ~800 words — enough context without blowing tokens
 
 
@@ -303,43 +303,68 @@ Output ONLY valid JSON:
 # Standalone runner 
 
 async def main():
-    DATA_DIR   = Path("baby-data/transcripts")
+    # Import transcribe_wav locally to avoid circular imports
+    from utils import transcribe_wav
+    
+    DATA_DIR   = Path("Data/baseline")
+    AUDIO_FILE = DATA_DIR / "ayu.mp4"
     OUTPUT_DIR = Path("output")
     OUTPUT_DIR.mkdir(exist_ok=True)
     SAVE_PATH  = OUTPUT_DIR / "semantic_density_metrics.json"
-    LABELS     = ["low", "medium", "high"]
 
-    api_key = os.environ.get("GROQ_API_KEY")
+    api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
         raise EnvironmentError(
-            "GROQ_API_KEY is not set.\n"
-            "Add it to your .env file or export it: set GROQ_API_KEY=your-groq-key"
+            "OPENROUTER_API_KEY is not set.\n"
+            "Add it to your .env file or export it: set OPENROUTER_API_KEY=your-openrouter-key"
         )
 
-    model = os.environ.get("GROQ_MODEL", DEFAULT_MODEL)
+    model  = os.environ.get("OPENROUTER_MODEL", DEFAULT_MODEL)
+    client = AsyncOpenAI(
+        api_key=api_key, 
+        base_url=OPENROUTER_BASE_URL,
+        default_headers={
+            "HTTP-Referer": "https://github.com/speech-cognitive-load/project",
+            "X-Title": "Speech Cognitive Load"
+        }
+    )
+    agent  = SemanticDensityAgent(model=model)
 
-    client = AsyncOpenAI(api_key=api_key, base_url=GROQ_BASE_URL)
-    agent  = SemanticDensityAgent(model=model, invert_score=True)
-
-    print("=== Semantic Density Analysis (Groq) ===")
+    print("=== Semantic Density Analysis (OpenRouter) ===")
     print(f"    model : {model}\n")
 
-    for label in LABELS:
-        data            = json.load(open(DATA_DIR / f"{label}_transcript.json"))
-        transcript_text = data["text"]
-        # Extract question_text from data dict if available
-        question_text   = data.get("question_text") or data.get("question") or None
+    # Check if audio file exists
+    if not AUDIO_FILE.exists():
+        raise FileNotFoundError(f"Audio file not found: {AUDIO_FILE}")
 
-        result = await agent.compute(transcript_text, client, question_text=question_text)
-        print(f"  [{label.upper()}]")
-        print(f"    density_score : {result['density_score']}  (1 = information-rich)")
-        print(f"    score         : {result['score']}  (0 = articulate, 1 = vague / high load)")
-        print(f"    reasoning     : {result['reasoning']}")
-        if question_text:
-            print(f"    question      : {question_text}")
-        if result.get("truncated"):
-            print(f"    [!] transcript was truncated before scoring")
+    print(f"[Transcribe] Loading {AUDIO_FILE.name}")
+    # Transcribe audio file
+    transcript_data = transcribe_wav(AUDIO_FILE)
+    transcript_text = transcript_data.get("text", "")
+
+    print(f"\n[Semantic Density Analysis]")
+    result = await agent.compute(
+        transcript_text,
+        client,
+        speaker_id="ayu",
+    )
+    
+    # Handle case where result is None (LLM parsing failed)
+    if result is None:
+        print(f"\n  [BASELINE - AYU]")
+        print(f"    ERROR: Failed to score semantic density (LLM parsing failed)")
         print()
+        return
+    
+    print(f"\n  [BASELINE - AYU]")
+    print(f"    effort_score     : {result['effort_score']}  (0.0 = easy, 1.0 = hard)")
+    print(f"    raw_score        : {result['raw_score']}  (normalised 0-1)")
+    print(f"    score            : {result['score']}")
+    if result.get("reasoning"):
+        print(f"    reasoning        : {result['reasoning']}")
+    if result.get("truncated"):
+        print(f"    [!] transcript was truncated before scoring")
+    print()
 
     agent.save(SAVE_PATH)
     print(f"Saved config + last result → {SAVE_PATH}")
@@ -347,7 +372,7 @@ async def main():
     agent2 = SemanticDensityAgent()
     agent2.load(SAVE_PATH)
     print(f"Re-loaded model      : {agent2.model}")
-    print(f"Re-loaded last_result: {agent2.last_result}")
+    print(f"Re-loaded last_result keys: {list(agent2.last_result.keys())}")
 
 
 if __name__ == "__main__":
