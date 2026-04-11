@@ -317,14 +317,30 @@ Transcript: {transcript[:500]}"""
         coh_norm  = _normalise_dim(coh_raw)
 
         composite = _composite(rel_norm, comp_norm, coh_norm)
-        raw_score = composite   # mirror naming pattern of other agents
 
-        # Compute z-score if baselines available
-        z_score_val = raw_score
+        # Compute per-dimension z-scores
+        rel_z = rel_norm if rel_norm is None else rel_norm
+        comp_z = comp_norm if comp_norm is None else comp_norm
+        coh_z = coh_norm if coh_norm is None else coh_norm
+        
         if speaker_id and baselines:
             speaker_baseline = baselines.get(speaker_id, {})
-            baseline = speaker_baseline.get("coherence", raw_score)
-            z_score_val = compute_z_score(raw_score, baseline, "coherence")
+            
+            # Try to extract per-dimension baselines (new format)
+            # Fall back to composite baseline if per-dimension not available (old format)
+            composite_baseline = speaker_baseline.get("coherence", 0.5)
+            
+            rel_baseline = speaker_baseline.get("relevance", composite_baseline)
+            comp_baseline = speaker_baseline.get("completeness", composite_baseline)
+            coh_baseline = speaker_baseline.get("coherence", composite_baseline)
+            
+            # Compute z-scores for each dimension
+            if rel_norm is not None:
+                rel_z = compute_z_score(rel_norm, rel_baseline, "coherence")  # using coherence range for all dims
+            if comp_norm is not None:
+                comp_z = compute_z_score(comp_norm, comp_baseline, "coherence")
+            if coh_norm is not None:
+                coh_z = compute_z_score(coh_norm, coh_baseline, "coherence")
 
         result = {
             # Dimension scores (raw 1–5 from LLM, null if insufficient data)
@@ -335,12 +351,13 @@ Transcript: {transcript[:500]}"""
             "relevance_norm":   rel_norm,
             "completeness_norm": comp_norm,
             "coherence_norm":   coh_norm,
-            # Composite
+            # Per-dimension z-scores (for independent signal processing)
+            "relevance_z":      rel_z,
+            "completeness_z":   comp_z,
+            "coherence_z":      coh_z,
+            # Composite (for reference/aggregation)
             "composite_score":  composite,
             "llm_confidence":   round(llm_conf, 3),
-            # Aggregator-compatible fields
-            "raw_score":        raw_score,
-            "score":            z_score_val,   # z-score (or raw if no baseline)
             "truncated":        truncated,
             "model_used":       self.model,
         }
